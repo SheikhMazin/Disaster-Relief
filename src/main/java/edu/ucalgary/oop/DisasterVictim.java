@@ -250,8 +250,8 @@ public class DisasterVictim {
 
         for (int i = 0; i < requirements.size(); i++) {
             VictimRequirement req = requirements.get(i);
-            if (req != null && req.getType() != null &&
-                    req.getType().equalsIgnoreCase(requirementType.trim())) {
+            if (req != null && req.getRequirementType() != null &&
+                    req.getRequirementType().equalsIgnoreCase(requirementType.trim())) {
                 requirements.remove(i);
                 return;
             }
