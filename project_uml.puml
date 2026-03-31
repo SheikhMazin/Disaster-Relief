@@ -1,0 +1,449 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam nodesep 70
+skinparam ranksep 90
+left to right direction
+
+together {
+class Main {
+  +main(String[] args) : void
+}
+
+class MainFrame {
+  -ReliefController controller
+  +MainFrame(ReliefController controller)
+  +showMainMenu() : void
+  +showVictimManagement() : void
+  +showSupplyManagement() : void
+  +showInquiryManagement() : void
+  +showSkillManagement() : void
+  +showRequirementManagement() : void
+  +showMessage(String message) : void
+  +showError(String errorMessage) : void
+}
+
+class ReliefController {
+  -DisasterVictimService victimService
+  -SupplyService supplyService
+  -InquiryService inquiryService
+  -RequirementService requirementService
+  -SkillService skillService
+  +ReliefController(DisasterVictimService victimService, SupplyService supplyService, InquiryService inquiryService, RequirementService requirementService, SkillService skillService)
+  +startApplication() : void
+}
+}
+
+together {
+class DatabaseManager {
+  -static DatabaseManager instance
+  -Connection connection
+  -String url
+  -String username
+  -String password
+  -DatabaseManager()
+  +getInstance() : DatabaseManager
+  +connect() : Connection
+  +disconnect() : void
+  +getConnection() : Connection
+}
+
+interface DataRepository {
+  +loadVictims() : ArrayList<DisasterVictim>
+  +loadLocations() : ArrayList<Location>
+  +loadSupplies() : ArrayList<Supply>
+  +loadInquiries() : ArrayList<ReliefService>
+  +saveVictim(DisasterVictim victim) : void
+  +updateVictim(DisasterVictim victim) : void
+  +softDeleteVictim(int victimID) : void
+  +hardDeleteVictim(int victimID) : void
+  +saveSupply(Supply supply) : void
+  +updateSupply(Supply supply) : void
+  +saveInquiry(ReliefService inquiry) : void
+  +updateInquiry(ReliefService inquiry) : void
+  +saveRequirement(VictimRequirement requirement) : void
+  +deleteRequirement(int victimID, String requirementType) : void
+  +saveSkill(Skill skill) : void
+  +deleteSkill(int skillID) : void
+}
+
+class PostgreSQLDataRepository {
+  -DatabaseManager dbManager
+  +PostgreSQLDataRepository(DatabaseManager dbManager)
+  +loadVictims() : ArrayList<DisasterVictim>
+  +loadLocations() : ArrayList<Location>
+  +loadSupplies() : ArrayList<Supply>
+  +loadInquiries() : ArrayList<ReliefService>
+  +saveVictim(DisasterVictim victim) : void
+  +updateVictim(DisasterVictim victim) : void
+  +softDeleteVictim(int victimID) : void
+  +hardDeleteVictim(int victimID) : void
+  +saveSupply(Supply supply) : void
+  +updateSupply(Supply supply) : void
+  +saveInquiry(ReliefService inquiry) : void
+  +updateInquiry(ReliefService inquiry) : void
+  +saveRequirement(VictimRequirement requirement) : void
+  +deleteRequirement(int victimID, String requirementType) : void
+  +saveSkill(Skill skill) : void
+  +deleteSkill(int skillID) : void
+}
+
+class ActionLogger {
+  -static ActionLogger instance
+  -String LOG_FILE
+  -ActionLogger()
+  +getInstance() : ActionLogger
+  +logAdded(String entityType, String description) : void
+  +logUpdated(String entityType, String description) : void
+  +logDeleted(String entityType, String description) : void
+  +logSoftDeleted(String entityType, String description) : void
+  -writeEntry(String entry) : void
+}
+}
+
+together {
+class DisasterVictimService {
+  -DataRepository repository
+  -ActionLogger logger
+  -ArrayList<DisasterVictim> victims
+  +DisasterVictimService(DataRepository repository, ActionLogger logger)
+  +loadVictims() : ArrayList<DisasterVictim>
+  +addVictim(DisasterVictim victim) : void
+  +updateVictim(DisasterVictim victim) : void
+  +getVictimByID(int victimID) : DisasterVictim
+  +getActiveVictims() : ArrayList<DisasterVictim>
+  +softDeleteVictim(int victimID) : void
+  +hardDeleteVictim(int victimID) : void
+  +addMedicalRecord(int victimID, MedicalRecord record) : void
+  +addFamilyConnection(int victimID, FamilyRelation relation) : void
+  +addRequirement(int victimID, VictimRequirement requirement) : void
+  +removeRequirement(int victimID, String requirementType) : void
+  +addSkill(int victimID, Skill skill) : void
+  +removeSkill(int victimID, int skillID) : void
+}
+
+class SupplyService {
+  -DataRepository repository
+  -ActionLogger logger
+  -ArrayList<Supply> supplies
+  +SupplyService(DataRepository repository, ActionLogger logger)
+  +loadSupplies() : ArrayList<Supply>
+  +addSupply(Supply supply) : void
+  +updateSupply(Supply supply) : void
+  +allocateSupply(int supplyID, int victimID) : void
+  +getAvailableSupplies() : ArrayList<Supply>
+  +getExpiredSupplies() : ArrayList<Supply>
+  +warnExpiredSupplies() : String
+}
+
+class InquiryService {
+  -DataRepository repository
+  -ActionLogger logger
+  -ArrayList<ReliefService> inquiries
+  +InquiryService(DataRepository repository, ActionLogger logger)
+  +loadInquiries() : ArrayList<ReliefService>
+  +addInquiry(ReliefService inquiry) : void
+  +updateInquiry(ReliefService inquiry) : void
+}
+
+class RequirementService {
+  -DataRepository repository
+  -HashMap<String, Set<String>> availableOptions
+  +RequirementService(DataRepository repository)
+  +loadAvailableRequirements(String fileName) : void
+  +getAvailableRequirementTypes() : Set<String>
+  +getOptionsForType(String requirementType) : Set<String>
+  +isValidOption(String requirementType, String selectedOption) : boolean
+}
+
+class SkillService {
+  -DataRepository repository
+  -ActionLogger logger
+  +SkillService(DataRepository repository, ActionLogger logger)
+  +addSkill(int victimID, Skill skill) : void
+  +removeSkill(int victimID, int skillID) : void
+  +searchByCategory(String category) : ArrayList<Skill>
+  +getVictimSkills(int victimID) : ArrayList<Skill>
+}
+}
+
+together {
+class DisasterVictim {
+  -int victimID
+  -String firstName
+  -String lastName
+  -LocalDate dateOfBirth
+  -Integer approximateAge
+  -ArrayList<FamilyRelation> familyConnections
+  -ArrayList<MedicalRecord> medicalRecords
+  -ArrayList<Supply> personalBelongings
+  -ArrayList<VictimRequirement> requirements
+  -ArrayList<Skill> skills
+  -LocalDate ENTRY_DATE
+  -String gender
+  -String comments
+  -boolean softDeleted
+
+  +DisasterVictim(int victimID, String firstName, LocalDate entryDate)
+  +DisasterVictim(int victimID, String firstName, LocalDate entryDate, LocalDate dateOfBirth)
+  +DisasterVictim(int victimID, String firstName, LocalDate entryDate, int approximateAge)
+  +getVictimID() : int
+  +getFirstName() : String
+  +setFirstName(String firstName) : void
+  +getLastName() : String
+  +setLastName(String lastName) : void
+  +getDateOfBirth() : LocalDate
+  +setDateOfBirth(LocalDate dateOfBirth) : void
+  +getApproximateAge() : Integer
+  +setApproximateAge(int approximateAge) : void
+  +getFamilyConnections() : ArrayList<FamilyRelation>
+  +getMedicalRecords() : ArrayList<MedicalRecord>
+  +getPersonalBelongings() : ArrayList<Supply>
+  +getRequirements() : ArrayList<VictimRequirement>
+  +getSkills() : ArrayList<Skill>
+  +addPersonalBelonging(Supply belonging) : void
+  +removePersonalBelonging(Supply belonging) : void
+  +addFamilyConnection(FamilyRelation connection) : void
+  +removeFamilyConnection(FamilyRelation connection) : void
+  +addMedicalRecord(MedicalRecord record) : void
+  +addRequirement(VictimRequirement requirement) : void
+  +removeRequirement(String requirementType) : void
+  +addSkill(Skill skill) : void
+  +removeSkill(int skillID) : void
+  +getEntryDate() : LocalDate
+  +getComments() : String
+  +setComments(String comments) : void
+  +getGender() : String
+  +setGender(String gender) : void
+  +isSoftDeleted() : boolean
+  +softDelete() : void
+}
+
+class FamilyRelation {
+  -DisasterVictim personOne
+  -String relationshipTo
+  -DisasterVictim personTwo
+
+  +FamilyRelation(DisasterVictim personOne, String relationshipTo, DisasterVictim personTwo)
+  +getPersonOne() : DisasterVictim
+  +setPersonOne(DisasterVictim personOne) : void
+  +getRelationshipTo() : String
+  +setRelationshipTo(String relationshipTo) : void
+  +getPersonTwo() : DisasterVictim
+  +setPersonTwo(DisasterVictim personTwo) : void
+}
+
+class MedicalRecord {
+  -Location location
+  -String treatmentDetails
+  -LocalDate dateOfTreatment
+
+  +MedicalRecord(Location location, String treatmentDetails, LocalDate dateOfTreatment)
+  +getLocation() : Location
+  +setLocation(Location location) : void
+  +getTreatmentDetails() : String
+  +setTreatmentDetails(String treatmentDetails) : void
+  +getDateOfTreatment() : LocalDate
+  +setDateOfTreatment(LocalDate dateOfTreatment) : void
+}
+
+class Location {
+  -int locationID
+  -String name
+  -String address
+  -ArrayList<DisasterVictim> occupants
+  -ArrayList<Supply> supplies
+
+  +Location(int locationID, String locationName, String address)
+  +getLocationID() : int
+  +getName() : String
+  +setName(String locationName) : void
+  +getAddress() : String
+  +setAddress(String address) : void
+  +getOccupants() : ArrayList<DisasterVictim>
+  +setOccupants(ArrayList<DisasterVictim> occupants) : void
+  +getSupplies() : ArrayList<Supply>
+  +setSupplies(ArrayList<Supply> inventory) : void
+  +addOccupant(DisasterVictim occupant) : void
+  +removeOccupant(DisasterVictim occupant) : void
+  +addSupply(Supply inventory) : void
+  +removeSupply(Supply inventory) : void
+}
+
+class Supply {
+  -int supplyID
+  -String type
+  -int quantity
+  -boolean perishable
+  -LocalDate expiryDate
+  -DisasterVictim allocatedVictim
+
+  +Supply(int supplyID, String type, int quantity)
+  +Supply(int supplyID, String type, int quantity, boolean perishable, LocalDate expiryDate)
+  +setType(String type) : void
+  +setQuantity(int quantity) : void
+  +getSupplyID() : int
+  +getType() : String
+  +getQuantity() : int
+  +isPerishable() : boolean
+  +setPerishable(boolean perishable) : void
+  +getExpiryDate() : LocalDate
+  +setExpiryDate(LocalDate expiryDate) : void
+  +isExpired() : boolean
+  +allocateTo(DisasterVictim victim) : void
+  +getAllocatedVictim() : DisasterVictim
+}
+
+class Inquirer {
+  -int inquirerID
+  -String FIRST_NAME
+  -String LAST_NAME
+  -String INFO
+  -String SERVICES_PHONE
+
+  +Inquirer(int inquirerID, String firstName, String lastName, String phone, String info)
+  +getInquirerID() : int
+  +getFirstName() : String
+  +getLastName() : String
+  +getServicesPhoneNum() : String
+  +getInfo() : String
+}
+
+class ReliefService {
+  -int inquiryID
+  -Inquirer inquirer
+  -DisasterVictim missingPerson
+  -LocalDate dateOfInquiry
+  -String infoProvided
+  -Location lastKnownLocation
+
+  +ReliefService(int inquiryID, Inquirer inquirer, DisasterVictim missingPerson, LocalDate inquiryDate, String infoProvided, Location lastLocation)
+  +getInquiryID() : int
+  +getInquirer() : Inquirer
+  +setInquirer(Inquirer inquirer) : void
+  +getMissingPerson() : DisasterVictim
+  +setMissingPerson(DisasterVictim missingPerson) : void
+  +getDateOfInquiry() : LocalDate
+  +setDateOfInquiry(LocalDate inquiryDate) : void
+  +getInfoProvided() : String
+  +setInfoProvided(String info) : void
+  +getLastKnownLocation() : Location
+  +setLastKnownLocation(Location lastLocation) : void
+  +getLogDetails() : String
+}
+
+class VictimRequirement {
+  -int victimID
+  -String requirementType
+  -String selectedOption
+
+  +VictimRequirement(int victimID, String requirementType, String selectedOption)
+  +getVictimID() : int
+  +getRequirementType() : String
+  +getSelectedOption() : String
+  +setSelectedOption(String selectedOption) : void
+}
+}
+
+together {
+abstract class Skill {
+  -int skillID
+  -int victimID
+  -String category
+  -String proficiencyLevel
+
+  +Skill(int skillID, int victimID, String category, String proficiencyLevel)
+  +getSkillID() : int
+  +getVictimID() : int
+  +getCategory() : String
+  +getProficiencyLevel() : String
+  +setProficiencyLevel(String proficiencyLevel) : void
+}
+
+class MedicalSkill {
+  -String certificationType
+  -LocalDate certificationExpiryDate
+
+  +MedicalSkill(int skillID, int victimID, String proficiencyLevel, String certificationType, LocalDate certificationExpiryDate)
+  +getCertificationType() : String
+  +setCertificationType(String certificationType) : void
+  +getCertificationExpiryDate() : LocalDate
+  +setCertificationExpiryDate(LocalDate certificationExpiryDate) : void
+}
+
+class LanguageSkill {
+  -String languageName
+  -boolean readWrite
+  -boolean speakListen
+
+  +LanguageSkill(int skillID, int victimID, String proficiencyLevel, String languageName, boolean readWrite, boolean speakListen)
+  +getLanguageName() : String
+  +setLanguageName(String languageName) : void
+  +hasReadWrite() : boolean
+  +hasSpeakListen() : boolean
+}
+
+class TradeSkill {
+  -String tradeType
+
+  +TradeSkill(int skillID, int victimID, String proficiencyLevel, String tradeType)
+  +getTradeType() : String
+  +setTradeType(String tradeType) : void
+}
+}
+
+Skill <|-- MedicalSkill
+Skill <|-- LanguageSkill
+Skill <|-- TradeSkill
+
+Main --> MainFrame
+MainFrame --> ReliefController
+
+ReliefController --> DisasterVictimService
+ReliefController --> SupplyService
+ReliefController --> InquiryService
+ReliefController --> RequirementService
+ReliefController --> SkillService
+
+DisasterVictimService --> DataRepository
+DisasterVictimService --> ActionLogger
+SupplyService --> DataRepository
+SupplyService --> ActionLogger
+InquiryService --> DataRepository
+InquiryService --> ActionLogger
+RequirementService --> DataRepository
+SkillService --> DataRepository
+SkillService --> ActionLogger
+
+PostgreSQLDataRepository ..|> DataRepository
+PostgreSQLDataRepository --> DatabaseManager
+
+DisasterVictim "1" o-- "0..*" FamilyRelation
+DisasterVictim "1" o-- "0..*" MedicalRecord
+DisasterVictim "1" o-- "0..*" Supply
+DisasterVictim "1" o-- "0..*" VictimRequirement
+DisasterVictim "1" o-- "0..*" Skill
+
+Location "1" o-- "0..*" DisasterVictim
+Location "1" o-- "0..*" Supply
+
+MedicalRecord "0..*" --> "1" Location
+FamilyRelation "0..*" --> "2" DisasterVictim
+ReliefService "1" --> "1" Inquirer
+ReliefService "1" --> "1" DisasterVictim
+ReliefService "1" --> "0..1" Location
+Supply "0..1" --> "1" DisasterVictim : allocated to
+
+DisasterVictim ..> IllegalArgumentException : throws
+Supply ..> IllegalArgumentException : throws
+RequirementService ..> IOException : throws
+RequirementService ..> ClassNotFoundException : throws
+DatabaseManager ..> SQLException : throws
+PostgreSQLDataRepository ..> SQLException : throws
+
+class IllegalArgumentException
+class IOException
+class ClassNotFoundException
+class SQLException
+
+@enduml
