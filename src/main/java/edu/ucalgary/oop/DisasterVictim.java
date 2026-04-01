@@ -5,10 +5,14 @@ package edu.ucalgary.oop;
  *
  * Represents a person registered in the disaster relief system.
  * Each victim has a unique ID, a mandatory first name, and an immutable
- * entry date recorded at registration.  Age is tracked as either an exact
+ * entry date recorded at registration. Age is tracked as either an exact
  * date of birth OR an approximate age — never both simultaneously.
  * A victim may be soft-deleted (hidden from the UI while data is retained)
  * or hard-deleted (fully removed) from the system.
+ *
+ * Valid gender options (case-insensitive): man, woman, boy, girl,
+ * non-binary person, please specify. Child/adult terms are enforced
+ * when a date of birth is known.
  *
  * @author Sheikh Muhammad Mazin
  * @version 2.0
@@ -71,11 +75,11 @@ public class DisasterVictim {
         this.ENTRY_DATE  = entryDate;
         this.softDeleted = false;
 
-        this.familyConnections = new ArrayList<>();
-        this.medicalRecords    = new ArrayList<>();
+        this.familyConnections  = new ArrayList<>();
+        this.medicalRecords     = new ArrayList<>();
         this.personalBelongings = new ArrayList<>();
-        this.requirements      = new ArrayList<>();
-        this.skills            = new ArrayList<>();
+        this.requirements       = new ArrayList<>();
+        this.skills             = new ArrayList<>();
     }
 
     /**
@@ -87,7 +91,8 @@ public class DisasterVictim {
      * @param dateOfBirth non-null date of birth, must not be after entryDate
      * @throws IllegalArgumentException if dateOfBirth is null or after entryDate
      */
-    public DisasterVictim(int victimID, String firstName, LocalDate entryDate, LocalDate dateOfBirth) {
+    public DisasterVictim(int victimID, String firstName, LocalDate entryDate,
+                          LocalDate dateOfBirth) {
         this(victimID, firstName, entryDate);
 
         if (dateOfBirth == null) {
@@ -110,7 +115,8 @@ public class DisasterVictim {
      * @param approximateAge estimated age in years, must be between 1 and 150
      * @throws IllegalArgumentException if approximateAge is out of range
      */
-    public DisasterVictim(int victimID, String firstName, LocalDate entryDate, int approximateAge) {
+    public DisasterVictim(int victimID, String firstName, LocalDate entryDate,
+                          int approximateAge) {
         this(victimID, firstName, entryDate);
 
         if (approximateAge <= 0 || approximateAge > 150) {
@@ -243,7 +249,7 @@ public class DisasterVictim {
     /**
      * Sets the victim's exact date of birth, clearing any approximate age.
      * Per Feature 5, a date of birth can replace an approximate age, but an
-     * approximate age can NEVER replace a date of birth.
+     * approximate age can never replace a date of birth.
      *
      * @param newDateOfBirth non-null date of birth, must not be after ENTRY_DATE
      * @throws IllegalArgumentException if the value is null or after ENTRY_DATE
@@ -255,8 +261,8 @@ public class DisasterVictim {
         if (newDateOfBirth.isAfter(ENTRY_DATE)) {
             throw new IllegalArgumentException("dateOfBirth cannot be after entryDate.");
         }
-        this.dateOfBirth     = newDateOfBirth;
-        this.approximateAge  = null;   // clear approximate age — DOB takes precedence
+        this.dateOfBirth    = newDateOfBirth;
+        this.approximateAge = null;
     }
 
     /**
@@ -292,9 +298,12 @@ public class DisasterVictim {
     }
 
     /**
-     * Sets the victim's gender using a restricted option set.
-     * Valid options (case-insensitive): man, woman, boy, girl, please specify.
-     * If a date of birth is known, child/adult terms are enforced accordingly.
+     * Sets the victim's gender. Valid options (case-insensitive):
+     * man, woman, boy, girl, non-binary person, please specify.
+     * If a date of birth is known, child/adult terms are enforced:
+     * under 18 must use boy/girl/non-binary person, 18+ must use
+     * man/woman/non-binary person.
+     * "Please specify" is always accepted and allows any follow-up value.
      *
      * @param gender non-null, non-empty gender string
      * @throws IllegalArgumentException if the value is null, empty, or not a
@@ -305,38 +314,43 @@ public class DisasterVictim {
             throw new IllegalArgumentException("Invalid gender option.");
         }
 
-        String raw            = gender.trim();
-        String normalizedKey  = raw.toLowerCase().replaceAll("\\s+", " ");
+        String raw           = gender.trim();
+        String normalizedKey = raw.toLowerCase().replaceAll("\\s+", " ");
 
+        // "Please specify" is always valid
         if (normalizedKey.equals("please specify")) {
             this.gender = "Please Specify";
             return;
         }
 
+        // If previously set to "Please Specify", allow any non-empty value
         if (this.gender != null && this.gender.equals("Please Specify")) {
             this.gender = raw;
             return;
         }
 
-        String g = raw.toLowerCase();
+        // Normalize to canonical form
         String normalized;
-        if      (g.equals("man"))   { normalized = "Man"; }
-        else if (g.equals("woman")) { normalized = "Woman"; }
-        else if (g.equals("boy"))   { normalized = "Boy"; }
-        else if (g.equals("girl"))  { normalized = "Girl"; }
-        else { throw new IllegalArgumentException("Invalid gender option."); }
+        switch (normalizedKey) {
+            case "man"              -> normalized = "Man";
+            case "woman"            -> normalized = "Woman";
+            case "boy"              -> normalized = "Boy";
+            case "girl"             -> normalized = "Girl";
+            case "non-binary person"-> normalized = "Non-binary person";
+            default -> throw new IllegalArgumentException("Invalid gender option.");
+        }
 
-        if (this.dateOfBirth != null) {
-            LocalDate ref = ENTRY_DATE;
-            int age = ref.getYear() - this.dateOfBirth.getYear();
-            if (ref.getMonthValue() < this.dateOfBirth.getMonthValue()
-                    || (ref.getMonthValue() == this.dateOfBirth.getMonthValue()
-                    && ref.getDayOfMonth() < this.dateOfBirth.getDayOfMonth())) {
+        // Enforce child/adult rules only for gendered terms when DOB is known
+        if (this.dateOfBirth != null && !normalized.equals("Non-binary person")) {
+            int age = ENTRY_DATE.getYear() - this.dateOfBirth.getYear();
+            if (ENTRY_DATE.getMonthValue() < this.dateOfBirth.getMonthValue()
+                    || (ENTRY_DATE.getMonthValue() == this.dateOfBirth.getMonthValue()
+                    && ENTRY_DATE.getDayOfMonth() < this.dateOfBirth.getDayOfMonth())) {
                 age--;
             }
 
             boolean isChild = age < 18;
-            if (isChild  && (normalized.equals("Man") || normalized.equals("Woman"))) {
+            if (isChild && (normalized.equals("Man") || normalized.equals("Woman"))) {
                 throw new IllegalArgumentException("Invalid gender option.");
             }
             if (!isChild && (normalized.equals("Boy") || normalized.equals("Girl"))) {
@@ -403,18 +417,20 @@ public class DisasterVictim {
             throw new IllegalArgumentException("requirement cannot be null.");
         }
         for (VictimRequirement existing : requirements) {
-            if (existing.getRequirementType().equalsIgnoreCase(requirement.getRequirementType())) {
+            if (existing.getRequirementType()
+                    .equalsIgnoreCase(requirement.getRequirementType())) {
                 throw new IllegalArgumentException(
-                        "Victim already has a requirement of type: " + requirement.getRequirementType());
+                        "Victim already has a requirement of type: "
+                                + requirement.getRequirementType());
             }
         }
         requirements.add(requirement);
     }
 
     /**
-     * Registers a skill for this victim.
-     * A victim may not register the exact same skill type more than once
-     * (e.g., cannot register intermediate French AND advanced French).
+     * Registers a skill for this victim. A victim may not register the exact
+     * same skill type more than once (e.g., cannot register intermediate French
+     * AND advanced French, but may register intermediate French and advanced Arabic).
      *
      * @param skill non-null Skill to add
      * @throws IllegalArgumentException if skill is null or a duplicate skill
@@ -434,14 +450,13 @@ public class DisasterVictim {
     }
 
     /**
-     * Determines whether two skills represent the same specific skill type,
-     * making it a duplicate that should be rejected.
-     * For language skills, the language name is compared; for medical skills,
-     * the certification type; for trade skills, the trade type.
+     * Determines whether two skills represent the same specific skill type.
+     * For language skills the language name is compared; for medical skills
+     * the certification type; for trade skills the trade type.
      *
      * @param existing the skill already registered
      * @param incoming the skill being added
-     * @return true if they are the same specific skill type
+     * @return true if they represent the same specific skill type
      */
     private boolean isDuplicateSkill(Skill existing, Skill incoming) {
         if (!existing.getCategory().equalsIgnoreCase(incoming.getCategory())) {
@@ -505,7 +520,8 @@ public class DisasterVictim {
         for (int i = 0; i < requirements.size(); i++) {
             VictimRequirement req = requirements.get(i);
             if (req != null && req.getRequirementType() != null
-                    && req.getRequirementType().equalsIgnoreCase(requirementType.trim())) {
+                    && req.getRequirementType()
+                    .equalsIgnoreCase(requirementType.trim())) {
                 requirements.remove(i);
                 return;
             }

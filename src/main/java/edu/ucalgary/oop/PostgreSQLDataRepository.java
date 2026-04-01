@@ -3,16 +3,26 @@ package edu.ucalgary.oop;
 /**
  * PostgreSQLDataRepository
  *
- * Concrete implementation of DataRepository that communicates with a
- * PostgreSQL database through the JDBC connection supplied by DatabaseManager.
- * All SQL operations are mediated here, keeping database logic isolated from
- * the rest of the application (Dependency Inversion Principle).
+ * Concrete implementation of DataRepository that communicates with the
+ * ensf380project PostgreSQL database through the JDBC connection supplied
+ * by DatabaseManager. All SQL operations are mediated here, keeping database
+ * logic isolated from the rest of the application (Dependency Inversion
+ * Principle).
  *
- * The database uses the schema defined in project.sql with username "oop"
- * and password "ucalgary".  No tables or fields are modified.
+ * Schema overview:
+ *   Person           — base table for all people (victims and inquirers)
+ *   DisasterVictim   — extends Person with victim-specific fields
+ *   Location         — relief locations
+ *   Supply           — supplies (perishable if expiry_date is set)
+ *   MedicalRecord    — treatment records per victim
+ *   FamilyRelationship — relationships between persons
+ *   Inquiry          — inquiries made by inquirers about missing persons
+ *   CulturalRequirement — cultural/religious requirements per victim
+ *   Skill            — master skill catalogue
+ *   VictimSkill      — skills registered to a victim
  *
  * @author Sheikh Muhammad Mazin
- * @version 1.0
+ * @version 2.0
  * @since 2026-01-01
  */
 
@@ -31,6 +41,7 @@ public class PostgreSQLDataRepository implements DataRepository {
      * Constructs a PostgreSQLDataRepository backed by the given DatabaseManager.
      *
      * @param dbManager non-null DatabaseManager that provides the active connection
+     * @throws IllegalArgumentException if dbManager is null
      */
     public PostgreSQLDataRepository(DatabaseManager dbManager) {
         if (dbManager == null) {
@@ -44,8 +55,9 @@ public class PostgreSQLDataRepository implements DataRepository {
     // =========================================================================
 
     /**
-     * Loads all non-hard-deleted disaster victim records from the database,
-     * populating their requirements and skills from the corresponding tables.
+     * Loads all disaster victim records from the database by joining the
+     * Person and DisasterVictim tables. Populates name, age, gender, entry
+     * date, comments, and soft-delete status for each victim.
      *
      * @return list of DisasterVictim objects; empty list if none found
      * @throws RuntimeException wrapping any SQLException
@@ -53,7 +65,12 @@ public class PostgreSQLDataRepository implements DataRepository {
     @Override
     public ArrayList<DisasterVictim> loadVictims() {
         ArrayList<DisasterVictim> victims = new ArrayList<>();
-        String sql = "SELECT * FROM disaster_victims";
+
+        String sql = "SELECT p.id, p.first_name, p.last_name, p.comments, " +
+                "dv.date_of_birth, dv.approximate_age, dv.gender, " +
+                "dv.entry_date, dv.is_soft_deleted " +
+                "FROM Person p " +
+                "JOIN DisasterVictim dv ON p.id = dv.person_id";
 
         try {
             Connection conn = dbManager.getConnection();
@@ -61,13 +78,12 @@ public class PostgreSQLDataRepository implements DataRepository {
             ResultSet rs = stmt.executeQuery();
 
             while (rs.next()) {
-                int id           = rs.getInt("victim_id");
+                int id           = rs.getInt("id");
                 String firstName = rs.getString("first_name");
                 LocalDate entry  = rs.getDate("entry_date").toLocalDate();
 
                 DisasterVictim victim;
 
-                // Prefer exact DOB; fall back to approximate age
                 java.sql.Date dobSql = rs.getDate("date_of_birth");
                 if (dobSql != null) {
                     victim = new DisasterVictim(id, firstName, entry, dobSql.toLocalDate());
@@ -89,7 +105,7 @@ public class PostgreSQLDataRepository implements DataRepository {
                 String comments = rs.getString("comments");
                 if (comments != null) victim.setComments(comments);
 
-                boolean softDeleted = rs.getBoolean("soft_deleted");
+                boolean softDeleted = rs.getBoolean("is_soft_deleted");
                 if (softDeleted) victim.softDelete();
 
                 victims.add(victim);
@@ -103,7 +119,7 @@ public class PostgreSQLDataRepository implements DataRepository {
     }
 
     /**
-     * Loads all location records from the database.
+     * Loads all location records from the Location table.
      *
      * @return list of Location objects; empty list if none found
      * @throws RuntimeException wrapping any SQLException
@@ -111,7 +127,7 @@ public class PostgreSQLDataRepository implements DataRepository {
     @Override
     public ArrayList<Location> loadLocations() {
         ArrayList<Location> locations = new ArrayList<>();
-        String sql = "SELECT * FROM locations";
+        String sql = "SELECT id, name, address FROM Location";
 
         try {
             Connection conn = dbManager.getConnection();
@@ -119,7 +135,7 @@ public class PostgreSQLDataRepository implements DataRepository {
             ResultSet rs = stmt.executeQuery();
 
             while (rs.next()) {
-                int id      = rs.getInt("location_id");
+                int id      = rs.getInt("id");
                 String name = rs.getString("name");
                 String addr = rs.getString("address");
                 locations.add(new Location(id, name, addr));
@@ -133,7 +149,8 @@ public class PostgreSQLDataRepository implements DataRepository {
     }
 
     /**
-     * Loads all supply records from the database.
+     * Loads all supply records from the Supply table.
+     * A supply is treated as perishable if it has an expiry_date set.
      *
      * @return list of Supply objects; empty list if none found
      * @throws RuntimeException wrapping any SQLException
@@ -141,7 +158,7 @@ public class PostgreSQLDataRepository implements DataRepository {
     @Override
     public ArrayList<Supply> loadSupplies() {
         ArrayList<Supply> supplies = new ArrayList<>();
-        String sql = "SELECT * FROM supplies";
+        String sql = "SELECT id, supply_type, expiry_date FROM Supply";
 
         try {
             Connection conn = dbManager.getConnection();
@@ -149,15 +166,14 @@ public class PostgreSQLDataRepository implements DataRepository {
             ResultSet rs = stmt.executeQuery();
 
             while (rs.next()) {
-                int id       = rs.getInt("supply_id");
-                String type  = rs.getString("type");
-                int qty      = rs.getInt("quantity");
-                boolean peri = rs.getBoolean("perishable");
-
+                int id          = rs.getInt("id");
+                String type     = rs.getString("supply_type");
                 java.sql.Date expSql = rs.getDate("expiry_date");
-                LocalDate expiry     = (expSql != null) ? expSql.toLocalDate() : null;
+                LocalDate expiry    = (expSql != null) ? expSql.toLocalDate() : null;
 
-                Supply supply = new Supply(id, type, qty, peri, expiry);
+                // A supply is perishable if it has an expiry date
+                boolean perishable = (expiry != null);
+                Supply supply = new Supply(id, type, 1, perishable, expiry);
                 supplies.add(supply);
             }
 
@@ -169,15 +185,69 @@ public class PostgreSQLDataRepository implements DataRepository {
     }
 
     /**
-     * Loads all inquiry (ReliefService) records from the database.
+     * Loads all inquiry records from the database by joining the Inquiry,
+     * Person (inquirer), and Person (subject) tables.
      *
      * @return list of ReliefService objects; empty list if none found
      * @throws RuntimeException wrapping any SQLException
      */
     @Override
     public ArrayList<ReliefService> loadInquiries() {
-        // TODO: implement with full joins to Inquirer, DisasterVictim, Location
-        return new ArrayList<>();
+        ArrayList<ReliefService> inquiries = new ArrayList<>();
+
+        String sql = "SELECT i.id, i.details, i.inquiry_date, " +
+                "p_inq.id AS inq_id, p_inq.first_name AS inq_first, " +
+                "p_inq.last_name AS inq_last, p_inq.comments AS inq_info, " +
+                "p_sub.id AS sub_id, p_sub.first_name AS sub_first, " +
+                "p_sub.last_name AS sub_last, " +
+                "dv.entry_date AS sub_entry " +
+                "FROM Inquiry i " +
+                "JOIN Person p_inq ON i.inquirer_id = p_inq.id " +
+                "LEFT JOIN Person p_sub ON i.subject_person_id = p_sub.id " +
+                "LEFT JOIN DisasterVictim dv ON p_sub.id = dv.person_id";
+
+        try {
+            Connection conn = dbManager.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                int inquiryID   = rs.getInt("id");
+                String details  = rs.getString("details");
+                LocalDate date  = rs.getTimestamp("inquiry_date")
+                        .toLocalDateTime().toLocalDate();
+
+                // Build Inquirer
+                int inqID          = rs.getInt("inq_id");
+                String inqFirst    = rs.getString("inq_first");
+                String inqLast     = rs.getString("inq_last");
+                String inqInfo     = rs.getString("inq_info");
+                Inquirer inquirer  = new Inquirer(inqID, inqFirst,
+                        inqLast != null ? inqLast : "Unknown",
+                        "N/A",
+                        inqInfo != null ? inqInfo : "No info");
+
+                // Build missing DisasterVictim
+                int subID         = rs.getInt("sub_id");
+                String subFirst   = rs.getString("sub_first");
+                java.sql.Date subEntryDate = rs.getDate("sub_entry");
+                LocalDate subEntry = (subEntryDate != null)
+                        ? subEntryDate.toLocalDate() : LocalDate.now();
+
+                DisasterVictim missing = new DisasterVictim(subID, subFirst, subEntry);
+                String subLast = rs.getString("sub_last");
+                if (subLast != null) missing.setLastName(subLast);
+
+                ReliefService inquiry = new ReliefService(
+                        inquiryID, inquirer, missing, date, details, null);
+                inquiries.add(inquiry);
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to load inquiries: " + e.getMessage(), e);
+        }
+
+        return inquiries;
     }
 
     // =========================================================================
@@ -185,42 +255,50 @@ public class PostgreSQLDataRepository implements DataRepository {
     // =========================================================================
 
     /**
-     * Inserts a new disaster victim record into the database.
+     * Inserts a new disaster victim into the database by first inserting into
+     * Person then into DisasterVictim.
      *
      * @param victim the DisasterVictim to persist
      * @throws RuntimeException wrapping any SQLException
      */
     @Override
     public void saveVictim(DisasterVictim victim) {
-        String sql = "INSERT INTO disaster_victims "
-                + "(victim_id, first_name, last_name, date_of_birth, approximate_age, "
-                + "gender, comments, entry_date, soft_deleted) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String personSql = "INSERT INTO Person (id, first_name, last_name, comments) " +
+                "VALUES (?, ?, ?, ?)";
+        String victimSql = "INSERT INTO DisasterVictim " +
+                "(person_id, date_of_birth, approximate_age, gender, " +
+                "entry_date, is_soft_deleted) " +
+                "VALUES (?, ?, ?, ?, ?, ?)";
 
         try {
             Connection conn = dbManager.getConnection();
-            PreparedStatement stmt = conn.prepareStatement(sql);
-            stmt.setInt(1, victim.getVictimID());
-            stmt.setString(2, victim.getFirstName());
-            stmt.setString(3, victim.getLastName());
+
+            PreparedStatement pStmt = conn.prepareStatement(personSql);
+            pStmt.setInt(1, victim.getVictimID());
+            pStmt.setString(2, victim.getFirstName());
+            pStmt.setString(3, victim.getLastName());
+            pStmt.setString(4, victim.getComments());
+            pStmt.executeUpdate();
+
+            PreparedStatement vStmt = conn.prepareStatement(victimSql);
+            vStmt.setInt(1, victim.getVictimID());
 
             if (victim.getDateOfBirth() != null) {
-                stmt.setDate(4, java.sql.Date.valueOf(victim.getDateOfBirth()));
+                vStmt.setDate(2, java.sql.Date.valueOf(victim.getDateOfBirth()));
             } else {
-                stmt.setNull(4, java.sql.Types.DATE);
+                vStmt.setNull(2, java.sql.Types.DATE);
             }
 
             if (victim.getApproximateAge() != null) {
-                stmt.setInt(5, victim.getApproximateAge());
+                vStmt.setInt(3, victim.getApproximateAge());
             } else {
-                stmt.setNull(5, java.sql.Types.INTEGER);
+                vStmt.setNull(3, java.sql.Types.INTEGER);
             }
 
-            stmt.setString(6, victim.getGender());
-            stmt.setString(7, victim.getComments());
-            stmt.setDate(8, java.sql.Date.valueOf(victim.getEntryDate()));
-            stmt.setBoolean(9, victim.isSoftDeleted());
-            stmt.executeUpdate();
+            vStmt.setString(4, victim.getGender());
+            vStmt.setDate(5, java.sql.Date.valueOf(victim.getEntryDate()));
+            vStmt.setBoolean(6, victim.isSoftDeleted());
+            vStmt.executeUpdate();
 
         } catch (SQLException e) {
             throw new RuntimeException("Failed to save victim: " + e.getMessage(), e);
@@ -228,41 +306,48 @@ public class PostgreSQLDataRepository implements DataRepository {
     }
 
     /**
-     * Updates an existing disaster victim record in the database.
+     * Updates an existing disaster victim record across the Person and
+     * DisasterVictim tables.
      *
      * @param victim the DisasterVictim with updated field values
      * @throws RuntimeException wrapping any SQLException
      */
     @Override
     public void updateVictim(DisasterVictim victim) {
-        String sql = "UPDATE disaster_victims SET "
-                + "first_name=?, last_name=?, date_of_birth=?, approximate_age=?, "
-                + "gender=?, comments=?, soft_deleted=? "
-                + "WHERE victim_id=?";
+        String personSql = "UPDATE Person SET first_name=?, last_name=?, comments=? " +
+                "WHERE id=?";
+        String victimSql = "UPDATE DisasterVictim SET date_of_birth=?, " +
+                "approximate_age=?, gender=?, is_soft_deleted=? " +
+                "WHERE person_id=?";
 
         try {
             Connection conn = dbManager.getConnection();
-            PreparedStatement stmt = conn.prepareStatement(sql);
-            stmt.setString(1, victim.getFirstName());
-            stmt.setString(2, victim.getLastName());
+
+            PreparedStatement pStmt = conn.prepareStatement(personSql);
+            pStmt.setString(1, victim.getFirstName());
+            pStmt.setString(2, victim.getLastName());
+            pStmt.setString(3, victim.getComments());
+            pStmt.setInt(4, victim.getVictimID());
+            pStmt.executeUpdate();
+
+            PreparedStatement vStmt = conn.prepareStatement(victimSql);
 
             if (victim.getDateOfBirth() != null) {
-                stmt.setDate(3, java.sql.Date.valueOf(victim.getDateOfBirth()));
+                vStmt.setDate(1, java.sql.Date.valueOf(victim.getDateOfBirth()));
             } else {
-                stmt.setNull(3, java.sql.Types.DATE);
+                vStmt.setNull(1, java.sql.Types.DATE);
             }
 
             if (victim.getApproximateAge() != null) {
-                stmt.setInt(4, victim.getApproximateAge());
+                vStmt.setInt(2, victim.getApproximateAge());
             } else {
-                stmt.setNull(4, java.sql.Types.INTEGER);
+                vStmt.setNull(2, java.sql.Types.INTEGER);
             }
 
-            stmt.setString(5, victim.getGender());
-            stmt.setString(6, victim.getComments());
-            stmt.setBoolean(7, victim.isSoftDeleted());
-            stmt.setInt(8, victim.getVictimID());
-            stmt.executeUpdate();
+            vStmt.setString(3, victim.getGender());
+            vStmt.setBoolean(4, victim.isSoftDeleted());
+            vStmt.setInt(5, victim.getVictimID());
+            vStmt.executeUpdate();
 
         } catch (SQLException e) {
             throw new RuntimeException("Failed to update victim: " + e.getMessage(), e);
@@ -270,14 +355,14 @@ public class PostgreSQLDataRepository implements DataRepository {
     }
 
     /**
-     * Sets the soft_deleted flag to true for the specified victim in the database.
+     * Sets the is_soft_deleted flag to true for the specified victim.
      *
      * @param victimID the ID of the victim to soft-delete
      * @throws RuntimeException wrapping any SQLException
      */
     @Override
     public void softDeleteVictim(int victimID) {
-        String sql = "UPDATE disaster_victims SET soft_deleted=TRUE WHERE victim_id=?";
+        String sql = "UPDATE DisasterVictim SET is_soft_deleted=TRUE WHERE person_id=?";
 
         try {
             Connection conn = dbManager.getConnection();
@@ -291,16 +376,17 @@ public class PostgreSQLDataRepository implements DataRepository {
     }
 
     /**
-     * Permanently removes the specified victim and all their associated records
-     * (medical records, family relations, skills, requirements, inquiries) from
-     * the database.  Cascading deletes are expected to be defined in the schema.
+     * Permanently removes the specified victim from the database.
+     * Cascading deletes defined in the schema handle removal of associated
+     * medical records, skills, requirements, and family relationships.
      *
      * @param victimID the ID of the victim to hard-delete
      * @throws RuntimeException wrapping any SQLException
      */
     @Override
     public void hardDeleteVictim(int victimID) {
-        String sql = "DELETE FROM disaster_victims WHERE victim_id=?";
+        // Deleting from Person cascades to DisasterVictim and all related tables
+        String sql = "DELETE FROM Person WHERE id=?";
 
         try {
             Connection conn = dbManager.getConnection();
@@ -318,28 +404,26 @@ public class PostgreSQLDataRepository implements DataRepository {
     // =========================================================================
 
     /**
-     * Inserts a new supply record into the database.
+     * Inserts a new supply record into the Supply table.
      *
      * @param supply the Supply to persist
      * @throws RuntimeException wrapping any SQLException
      */
     @Override
     public void saveSupply(Supply supply) {
-        String sql = "INSERT INTO supplies (supply_id, type, quantity, perishable, expiry_date) "
-                + "VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO Supply (id, supply_type, expiry_date) " +
+                "VALUES (?, ?, ?)";
 
         try {
             Connection conn = dbManager.getConnection();
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setInt(1, supply.getSupplyID());
             stmt.setString(2, supply.getType());
-            stmt.setInt(3, supply.getQuantity());
-            stmt.setBoolean(4, supply.isPerishable());
 
             if (supply.getExpiryDate() != null) {
-                stmt.setDate(5, java.sql.Date.valueOf(supply.getExpiryDate()));
+                stmt.setDate(3, java.sql.Date.valueOf(supply.getExpiryDate()));
             } else {
-                stmt.setNull(5, java.sql.Types.DATE);
+                stmt.setNull(3, java.sql.Types.DATE);
             }
 
             stmt.executeUpdate();
@@ -350,26 +434,33 @@ public class PostgreSQLDataRepository implements DataRepository {
     }
 
     /**
-     * Updates an existing supply record in the database.
+     * Updates an existing supply record in the Supply table.
+     * Also updates the victim allocation if the supply has been allocated.
      *
      * @param supply the Supply with updated values
      * @throws RuntimeException wrapping any SQLException
      */
     @Override
     public void updateSupply(Supply supply) {
-        String sql = "UPDATE supplies SET type=?, quantity=?, perishable=?, expiry_date=? "
-                + "WHERE supply_id=?";
+        String sql = "UPDATE Supply SET supply_type=?, expiry_date=?, " +
+                "victim_id=?, allocation_date=? WHERE id=?";
 
         try {
             Connection conn = dbManager.getConnection();
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setString(1, supply.getType());
-            stmt.setInt(2, supply.getQuantity());
-            stmt.setBoolean(3, supply.isPerishable());
 
             if (supply.getExpiryDate() != null) {
-                stmt.setDate(4, java.sql.Date.valueOf(supply.getExpiryDate()));
+                stmt.setDate(2, java.sql.Date.valueOf(supply.getExpiryDate()));
             } else {
+                stmt.setNull(2, java.sql.Types.DATE);
+            }
+
+            if (supply.getAllocatedVictim() != null) {
+                stmt.setInt(3, supply.getAllocatedVictim().getVictimID());
+                stmt.setDate(4, java.sql.Date.valueOf(LocalDate.now()));
+            } else {
+                stmt.setNull(3, java.sql.Types.INTEGER);
                 stmt.setNull(4, java.sql.Types.DATE);
             }
 
@@ -386,25 +477,55 @@ public class PostgreSQLDataRepository implements DataRepository {
     // =========================================================================
 
     /**
-     * Inserts a new inquiry record into the database.
+     * Inserts a new inquiry record into the Inquiry table.
      *
-     * @param inquiry the ReliefService (inquiry) to persist
+     * @param inquiry the ReliefService inquiry to persist
      * @throws RuntimeException wrapping any SQLException
      */
     @Override
     public void saveInquiry(ReliefService inquiry) {
-        // TODO: implement with full field mapping to inquiry table
+        String sql = "INSERT INTO Inquiry (id, inquirer_id, subject_person_id, " +
+                "inquiry_date, details) VALUES (?, ?, ?, ?, ?)";
+
+        try {
+            Connection conn = dbManager.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            stmt.setInt(1, inquiry.getInquiryID());
+            stmt.setInt(2, inquiry.getInquirer().getInquirerID());
+            stmt.setInt(3, inquiry.getMissingPerson().getVictimID());
+            stmt.setDate(4, java.sql.Date.valueOf(inquiry.getDateOfInquiry()));
+            stmt.setString(5, inquiry.getInfoProvided());
+            stmt.executeUpdate();
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to save inquiry: " + e.getMessage(), e);
+        }
     }
 
     /**
-     * Updates an existing inquiry record in the database.
+     * Updates an existing inquiry record in the Inquiry table.
      *
      * @param inquiry the ReliefService with updated values
      * @throws RuntimeException wrapping any SQLException
      */
     @Override
     public void updateInquiry(ReliefService inquiry) {
-        // TODO: implement with full field mapping to inquiry table
+        String sql = "UPDATE Inquiry SET inquirer_id=?, subject_person_id=?, " +
+                "inquiry_date=?, details=? WHERE id=?";
+
+        try {
+            Connection conn = dbManager.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            stmt.setInt(1, inquiry.getInquirer().getInquirerID());
+            stmt.setInt(2, inquiry.getMissingPerson().getVictimID());
+            stmt.setDate(3, java.sql.Date.valueOf(inquiry.getDateOfInquiry()));
+            stmt.setString(4, inquiry.getInfoProvided());
+            stmt.setInt(5, inquiry.getInquiryID());
+            stmt.executeUpdate();
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to update inquiry: " + e.getMessage(), e);
+        }
     }
 
     // =========================================================================
@@ -412,15 +533,17 @@ public class PostgreSQLDataRepository implements DataRepository {
     // =========================================================================
 
     /**
-     * Inserts a cultural/religious requirement for a victim into the database.
+     * Inserts a cultural/religious requirement for a victim into the
+     * CulturalRequirement table.
      *
      * @param requirement the VictimRequirement to persist
      * @throws RuntimeException wrapping any SQLException
      */
     @Override
     public void saveRequirement(VictimRequirement requirement) {
-        String sql = "INSERT INTO victim_requirements (victim_id, requirement_type, selected_option) "
-                + "VALUES (?, ?, ?)";
+        String sql = "INSERT INTO CulturalRequirement " +
+                "(victim_id, requirement_category, requirement_option) " +
+                "VALUES (?, ?, ?)";
 
         try {
             Connection conn = dbManager.getConnection();
@@ -436,15 +559,17 @@ public class PostgreSQLDataRepository implements DataRepository {
     }
 
     /**
-     * Removes a specific requirement type for a victim from the database.
+     * Removes a specific requirement category for a victim from the
+     * CulturalRequirement table.
      *
      * @param victimID        ID of the victim
-     * @param requirementType the type of requirement to remove
+     * @param requirementType the requirement_category value to remove
      * @throws RuntimeException wrapping any SQLException
      */
     @Override
     public void deleteRequirement(int victimID, String requirementType) {
-        String sql = "DELETE FROM victim_requirements WHERE victim_id=? AND requirement_type=?";
+        String sql = "DELETE FROM CulturalRequirement " +
+                "WHERE victim_id=? AND requirement_category=?";
 
         try {
             Connection conn = dbManager.getConnection();
@@ -463,54 +588,76 @@ public class PostgreSQLDataRepository implements DataRepository {
     // =========================================================================
 
     /**
-     * Inserts a skill record into the database.  The concrete skill type is
-     * determined at runtime and the appropriate type-specific fields are saved.
+     * Inserts a skill record into the database. First ensures the skill exists
+     * in the Skill catalogue table, then inserts a VictimSkill record linking
+     * the victim to the skill with proficiency and type-specific details.
      *
      * @param skill the Skill to persist
      * @throws RuntimeException wrapping any SQLException
      */
     @Override
     public void saveSkill(Skill skill) {
-        String sql = "INSERT INTO skills "
-                + "(skill_id, victim_id, category, proficiency_level, "
-                + "certification_type, certification_expiry, language_name, "
-                + "read_write, speak_listen, trade_type) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        // Ensure the skill exists in the Skill catalogue
+        String skillSql = "INSERT INTO Skill (skill_name, category) " +
+                "VALUES (?, ?) ON CONFLICT (skill_name, category) DO NOTHING";
+
+        // Insert into VictimSkill linking table
+        String victimSkillSql = "INSERT INTO VictimSkill " +
+                "(victim_id, skill_id, details, language_capabilities, " +
+                "certification_expiry, proficiency_level) " +
+                "VALUES (?, " +
+                "(SELECT id FROM Skill WHERE skill_name=? AND category=?), " +
+                "?, ?, ?, ?)";
 
         try {
             Connection conn = dbManager.getConnection();
-            PreparedStatement stmt = conn.prepareStatement(sql);
-            stmt.setInt(1, skill.getSkillID());
-            stmt.setInt(2, skill.getVictimID());
-            stmt.setString(3, skill.getCategory());
-            stmt.setString(4, skill.getProficiencyLevel());
+
+            // Determine skill_name and category based on type
+            String skillName;
+            String category = skill.getCategory().toLowerCase();
+            String details = null;
+            String langCapabilities = null;
+            java.sql.Date certExpiry = null;
 
             if (skill instanceof MedicalSkill ms) {
-                stmt.setString(5, ms.getCertificationType());
-                stmt.setDate(6, java.sql.Date.valueOf(ms.getCertificationExpiryDate()));
-                stmt.setNull(7, java.sql.Types.VARCHAR);
-                stmt.setNull(8, java.sql.Types.BOOLEAN);
-                stmt.setNull(9, java.sql.Types.BOOLEAN);
-                stmt.setNull(10, java.sql.Types.VARCHAR);
+                skillName    = ms.getCertificationType();
+                details      = ms.getCertificationType();
+                certExpiry   = java.sql.Date.valueOf(ms.getCertificationExpiryDate());
 
             } else if (skill instanceof LanguageSkill ls) {
-                stmt.setNull(5, java.sql.Types.VARCHAR);
-                stmt.setNull(6, java.sql.Types.DATE);
-                stmt.setString(7, ls.getLanguageName());
-                stmt.setBoolean(8, ls.hasReadWrite());
-                stmt.setBoolean(9, ls.hasSpeakListen());
-                stmt.setNull(10, java.sql.Types.VARCHAR);
+                skillName       = ls.getLanguageName();
+                StringBuilder caps = new StringBuilder();
+                if (ls.hasReadWrite())   caps.append("read/write");
+                if (ls.hasSpeakListen()) {
+                    if (caps.length() > 0) caps.append(", ");
+                    caps.append("speak/listen");
+                }
+                langCapabilities = caps.toString();
 
             } else if (skill instanceof TradeSkill ts) {
-                stmt.setNull(5, java.sql.Types.VARCHAR);
-                stmt.setNull(6, java.sql.Types.DATE);
-                stmt.setNull(7, java.sql.Types.VARCHAR);
-                stmt.setNull(8, java.sql.Types.BOOLEAN);
-                stmt.setNull(9, java.sql.Types.BOOLEAN);
-                stmt.setString(10, ts.getTradeType());
+                skillName = ts.getTradeType();
+                details   = ts.getTradeType();
+
+            } else {
+                throw new IllegalArgumentException("Unknown skill type.");
             }
 
-            stmt.executeUpdate();
+            // Insert into Skill catalogue
+            PreparedStatement sStmt = conn.prepareStatement(skillSql);
+            sStmt.setString(1, skillName);
+            sStmt.setString(2, category);
+            sStmt.executeUpdate();
+
+            // Insert into VictimSkill
+            PreparedStatement vsStmt = conn.prepareStatement(victimSkillSql);
+            vsStmt.setInt(1, skill.getVictimID());
+            vsStmt.setString(2, skillName);
+            vsStmt.setString(3, category);
+            vsStmt.setString(4, details);
+            vsStmt.setString(5, langCapabilities);
+            vsStmt.setDate(6, certExpiry);
+            vsStmt.setString(7, skill.getProficiencyLevel());
+            vsStmt.executeUpdate();
 
         } catch (SQLException e) {
             throw new RuntimeException("Failed to save skill: " + e.getMessage(), e);
@@ -518,14 +665,14 @@ public class PostgreSQLDataRepository implements DataRepository {
     }
 
     /**
-     * Removes a skill record from the database by its ID.
+     * Removes a VictimSkill record from the database by its ID.
      *
-     * @param skillID the ID of the Skill to delete
+     * @param skillID the ID of the VictimSkill entry to delete
      * @throws RuntimeException wrapping any SQLException
      */
     @Override
     public void deleteSkill(int skillID) {
-        String sql = "DELETE FROM skills WHERE skill_id=?";
+        String sql = "DELETE FROM VictimSkill WHERE id=?";
 
         try {
             Connection conn = dbManager.getConnection();
