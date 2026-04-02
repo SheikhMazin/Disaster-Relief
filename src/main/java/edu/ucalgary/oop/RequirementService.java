@@ -75,15 +75,8 @@ public class RequirementService {
         try (FileInputStream fis = new FileInputStream(fileName);
              ObjectInputStream ois = new ObjectInputStream(fis)) {
 
-            Object obj = ois.readObject();
-
-            // CulturalOptions is a serialized class with a field:
-            // private HashMap<String, Set<String>> accommodations
-            // We use reflection to access it since CulturalOptions may not
-            // be directly available as a compiled class in our package.
-            java.lang.reflect.Field field = obj.getClass().getDeclaredField("accommodations");
-            field.setAccessible(true);
-            this.availableOptions = (HashMap<String, Set<String>>) field.get(obj);
+            CulturalOptions options = (CulturalOptions) ois.readObject();
+            this.availableOptions = options.getAccommodations();
 
         } catch (IOException e) {
             System.err.println("Error: could not read requirements file: " + fileName);
@@ -91,11 +84,8 @@ public class RequirementService {
         } catch (ClassNotFoundException e) {
             System.err.println("Error: requirements file format not recognised: " + fileName);
             throw e;
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new IOException("Failed to read accommodations from requirements file.", e);
         }
     }
-
     // =========================================================================
     //  Query methods
     // =========================================================================
