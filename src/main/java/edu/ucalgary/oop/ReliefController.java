@@ -175,6 +175,17 @@ public class ReliefController {
         victimService.addFamilyConnection(victimID, relation);
     }
 
+    /**
+     * Returns all locations currently loaded from the database.
+     * Used to populate location dropdowns in the user interface.
+     *
+     * @return list of all Location objects
+     */
+    public ArrayList<Location> getLocations() {
+        return victimService.getLocations();
+    }
+
+
     // =========================================================================
     //  Requirements management
     // =========================================================================

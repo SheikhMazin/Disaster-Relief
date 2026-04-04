@@ -178,6 +178,17 @@ public class DisasterVictimService {
                         victimID, record.getTreatmentDetails(), record.getDateOfTreatment()));
     }
 
+    /**
+     * Loads and returns all location records from the database.
+     * Used to populate location selection dropdowns in the UI.
+     *
+     * @return list of all Location objects
+     */
+    public ArrayList<Location> getLocations() {
+        return repository.loadLocations();
+    }
+
+
     // =========================================================================
     //  Family Connections
     // =========================================================================

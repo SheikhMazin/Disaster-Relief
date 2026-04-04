@@ -286,9 +286,9 @@ public class MainFrame extends JFrame{
             JPanel skillsPanel = new JPanel();
 
             tabs.addTab("Info", buildInfoPanel(victim));
-            tabs.addTab("Medical Records", buildMedicalPanel(victim));
-            tabs.addTab("Family", familyPanel);
-            tabs.addTab("Skills", skillsPanel);
+            tabs.addTab("Medical Records", buildMedicalPanel(victim, tabs, 1));
+            tabs.addTab("Family", buildFamilyPanel(victim, tabs, 2));
+            tabs.addTab("Skills", buildSkillsPanel(victim, tabs, 3));
 
             JDialog dialog = new JDialog(this, "Victim Details - " + victim.getFirstName(), true);
             dialog.setSize(700, 500);
@@ -344,6 +344,16 @@ public class MainFrame extends JFrame{
         contentPanel.repaint();
     }
 
+
+    /**
+     * Builds the Info tab panel for the victim details dialog.
+     * Displays all basic information about the given victim in a
+     * two-column label/value grid layout including ID, name, gender,
+     * age, entry date, comments, and active/soft-deleted status.
+     *
+     * @param victim the DisasterVictim whose information to display
+     * @return a JPanel containing the victim's full info in a grid layout
+     */
     private JPanel buildInfoPanel(DisasterVictim victim) {
         JPanel infoPanel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
@@ -466,14 +476,25 @@ public class MainFrame extends JFrame{
         return infoPanel;
     }
 
-    private JPanel buildMedicalPanel(DisasterVictim victim){
-        // ── Build table ───────────────────────────────────────────────────────────
-        ArrayList<MedicalRecord> medicalRecords = victim.getMedicalRecords();
 
+    /**
+     * Builds the Medical Records tab panel for the victim details dialog.
+     * Displays a table of all medical records for the given victim and
+     * provides a button to add a new medical record with a location,
+     * treatment details, and date. The tab refreshes immediately after
+     * a successful add without closing the dialog.
+     *
+     * @param victim   the DisasterVictim whose medical records to display
+     * @param tabs     the parent JTabbedPane used to refresh this tab on update
+     * @param tabIndex the index of this tab within the JTabbedPane
+     * @return a JPanel containing the medical records table and add button
+     */
+    private JPanel buildMedicalPanel(DisasterVictim victim, JTabbedPane tabs, int tabIndex) {
+        ArrayList<MedicalRecord> medicalRecords = victim.getMedicalRecords();
         String[] columns = {"Location", "Treatment Details", "Date of Treatment"};
         Object[][] data  = new Object[medicalRecords.size()][3];
 
-        for (int i = 0; i < medicalRecords.size(); i++){
+        for (int i = 0; i < medicalRecords.size(); i++) {
             MedicalRecord record = medicalRecords.get(i);
             data[i][0] = record.getLocation().getName();
             data[i][1] = record.getTreatmentDetails();
@@ -481,15 +502,306 @@ public class MainFrame extends JFrame{
         }
 
         JPanel medicalRecordPanel = new JPanel(new BorderLayout());
-
         JTable table = new JTable(data, columns);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.setRowHeight(25);
-
         JScrollPane scrollPane = new JScrollPane(table);
         medicalRecordPanel.add(scrollPane, BorderLayout.CENTER);
 
+        JButton addBtn = new JButton("Add Medical Record");
+
+        addBtn.addActionListener(e -> {
+            ArrayList<Location> locations = controller.getLocations();
+            String[] locationNames = new String[locations.size()];
+            for (int i = 0; i < locations.size(); i++) {
+                locationNames[i] = locations.get(i).getName();
+            }
+
+            JComboBox<String> locationBox = new JComboBox<>(locationNames);
+            JTextField treatmentField     = new JTextField();
+            JTextField dateField          = new JTextField(LocalDate.now().toString());
+
+            Object[] fields = {
+                    "Location:",          locationBox,
+                    "Treatment Details:", treatmentField,
+                    "Date (YYYY-MM-DD):", dateField
+            };
+
+            int result = JOptionPane.showConfirmDialog(
+                    null, fields, "Add Medical Record", JOptionPane.OK_CANCEL_OPTION);
+
+            if (result == JOptionPane.OK_OPTION) {
+                try {
+                    Location selectedLocation = locations.get(locationBox.getSelectedIndex());
+                    String treatment          = treatmentField.getText().trim();
+                    LocalDate date            = LocalDate.parse(dateField.getText().trim());
+
+                    MedicalRecord record = new MedicalRecord(
+                            selectedLocation, treatment, date);
+                    controller.addMedicalRecord(victim.getVictimID(), record);
+
+                    // ── refresh the tab immediately ───────────────────────────
+                    tabs.setComponentAt(tabIndex,
+                            buildMedicalPanel(victim, tabs, tabIndex));
+                    tabs.revalidate();
+                    tabs.repaint();
+                    // ─────────────────────────────────────────────────────────
+
+                    JOptionPane.showMessageDialog(null,
+                            "Medical record added successfully!");
+
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(null,
+                            "Error: " + ex.getMessage(),
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        btnPanel.add(addBtn);
+        medicalRecordPanel.add(btnPanel, BorderLayout.SOUTH);
+
         return medicalRecordPanel;
+    }
+
+    /**
+     * Builds the Family Connections tab panel for the victim details dialog.
+     * Displays a table of all family relationships for the given victim and
+     * provides a button to add a new family connection.
+     *
+     * @param victim   the DisasterVictim whose family connections to display
+     * @param tabs     the parent JTabbedPane used to refresh this tab on update
+     * @param tabIndex the index of this tab within the JTabbedPane
+     * @return a JPanel containing the family connections table and add button
+     */
+    private JPanel buildFamilyPanel(DisasterVictim victim, JTabbedPane tabs, int tabIndex) {
+        ArrayList<FamilyRelation> connections = victim.getFamilyConnections();
+        String[] columns = {"Related Person", "Relationship"};
+        Object[][] data  = new Object[connections.size()][2];
+
+        for (int i = 0; i < connections.size(); i++) {
+            FamilyRelation relation = connections.get(i);
+            DisasterVictim related  = relation.getPersonTwo();
+            data[i][0] = related.getFirstName() + " " +
+                    (related.getLastName() != null ? related.getLastName() : "");
+            data[i][1] = relation.getRelationshipTo();
+        }
+
+        JPanel familyPanel = new JPanel(new BorderLayout());
+        JTable table       = new JTable(data, columns);
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        table.setRowHeight(25);
+        familyPanel.add(new JScrollPane(table), BorderLayout.CENTER);
+
+        JButton addBtn = new JButton("Add Family Connection");
+
+        addBtn.addActionListener(e -> {
+            ArrayList<DisasterVictim> allVictims = controller.getActiveVictims();
+            // remove current victim from options
+            allVictims.removeIf(v -> v.getVictimID() == victim.getVictimID());
+
+            String[] victimNames = new String[allVictims.size()];
+            for (int i = 0; i < allVictims.size(); i++) {
+                victimNames[i] = allVictims.get(i).getFirstName() + " " +
+                        (allVictims.get(i).getLastName() != null
+                                ? allVictims.get(i).getLastName() : "");
+            }
+
+            JComboBox<String> victimBox      = new JComboBox<>(victimNames);
+            JTextField relationshipField     = new JTextField();
+
+            Object[] fields = {
+                    "Related Person:",  victimBox,
+                    "Relationship:",    relationshipField
+            };
+
+            int result = JOptionPane.showConfirmDialog(
+                    null, fields, "Add Family Connection", JOptionPane.OK_CANCEL_OPTION);
+
+            if (result == JOptionPane.OK_OPTION) {
+                try {
+                    DisasterVictim related = allVictims.get(victimBox.getSelectedIndex());
+                    String relationship    = relationshipField.getText().trim();
+
+                    FamilyRelation relation = new FamilyRelation(victim, relationship, related);
+                    controller.addFamilyConnection(victim.getVictimID(), relation);
+
+                    tabs.setComponentAt(tabIndex, buildFamilyPanel(victim, tabs, tabIndex));
+                    tabs.revalidate();
+                    tabs.repaint();
+
+                    JOptionPane.showMessageDialog(null, "Family connection added successfully!");
+
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(null,
+                            "Error: " + ex.getMessage(),
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        btnPanel.add(addBtn);
+        familyPanel.add(btnPanel, BorderLayout.SOUTH);
+
+        return familyPanel;
+    }
+
+    /**
+     * Builds the Skills tab panel for the victim details dialog.
+     * Displays a table of all skills registered to the given victim and
+     * provides buttons to add or remove skills.
+     *
+     * @param victim   the DisasterVictim whose skills to display
+     * @param tabs     the parent JTabbedPane used to refresh this tab on update
+     * @param tabIndex the index of this tab within the JTabbedPane
+     * @return a JPanel containing the skills table and add/remove buttons
+     */
+    private JPanel buildSkillsPanel(DisasterVictim victim, JTabbedPane tabs, int tabIndex) {
+        ArrayList<Skill> skills  = victim.getSkills();
+        String[] columns         = {"ID", "Category", "Proficiency", "Details"};
+        Object[][] data          = new Object[skills.size()][4];
+
+        for (int i = 0; i < skills.size(); i++) {
+            Skill skill  = skills.get(i);
+            data[i][0]   = skill.getSkillID();
+            data[i][1]   = skill.getCategory();
+            data[i][2]   = skill.getProficiencyLevel();
+
+            if (skill instanceof MedicalSkill ms) {
+                data[i][3] = ms.getCertificationType() + " (exp: " +
+                        ms.getCertificationExpiryDate() + ")";
+            } else if (skill instanceof LanguageSkill ls) {
+                data[i][3] = ls.getLanguageName() + " — " +
+                        (ls.hasReadWrite() ? "read/write " : "") +
+                        (ls.hasSpeakListen() ? "speak/listen" : "");
+            } else if (skill instanceof TradeSkill ts) {
+                data[i][3] = ts.getTradeType();
+            }
+        }
+
+        JPanel skillsPanel = new JPanel(new BorderLayout());
+        JTable table       = new JTable(data, columns);
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        table.setRowHeight(25);
+        skillsPanel.add(new JScrollPane(table), BorderLayout.CENTER);
+
+        JButton addBtn    = new JButton("Add Skill");
+        JButton removeBtn = new JButton("Remove Skill");
+
+        // ── Add skill action ──────────────────────────────────────────────────────
+        addBtn.addActionListener(e -> {
+            String[] categories      = {"Medical", "Language", "Trade"};
+            String[] proficiencies   = {"beginner", "intermediate", "advanced"};
+            String[] medTypes        = {"first-aid", "counseling", "nursing", "doctor"};
+            String[] tradeTypes      = {"carpentry", "plumbing", "electricity"};
+
+            JComboBox<String> categoryBox    = new JComboBox<>(categories);
+            JComboBox<String> proficiencyBox = new JComboBox<>(proficiencies);
+            JTextField detailField           = new JTextField();
+            JTextField expiryField           = new JTextField("YYYY-MM-DD");
+            JComboBox<String> medTypeBox     = new JComboBox<>(medTypes);
+            JComboBox<String> tradeTypeBox   = new JComboBox<>(tradeTypes);
+            JCheckBox readWriteBox           = new JCheckBox("Read/Write");
+            JCheckBox speakListenBox         = new JCheckBox("Speak/Listen");
+
+            Object[] fields = {
+                    "Category:",    categoryBox,
+                    "Proficiency:", proficiencyBox,
+                    "Medical Type (if Medical):",  medTypeBox,
+                    "Expiry Date (if Medical):",   expiryField,
+                    "Language Name (if Language):", detailField,
+                    readWriteBox, speakListenBox,
+                    "Trade Type (if Trade):",      tradeTypeBox
+            };
+
+            int result = JOptionPane.showConfirmDialog(
+                    null, fields, "Add Skill", JOptionPane.OK_CANCEL_OPTION);
+
+            if (result == JOptionPane.OK_OPTION) {
+                try {
+                    String category    = (String) categoryBox.getSelectedItem();
+                    String proficiency = (String) proficiencyBox.getSelectedItem();
+                    int skillID        = (int)(Math.random() * 10000) + 1;
+
+                    Skill skill;
+                    switch (category) {
+                        case "Medical" -> {
+                            String certType  = (String) medTypeBox.getSelectedItem();
+                            LocalDate expiry = LocalDate.parse(expiryField.getText().trim());
+                            skill = new MedicalSkill(skillID, victim.getVictimID(),
+                                    proficiency, certType, expiry);
+                        }
+                        case "Language" -> {
+                            String langName = detailField.getText().trim();
+                            skill = new LanguageSkill(skillID, victim.getVictimID(),
+                                    proficiency, langName,
+                                    readWriteBox.isSelected(),
+                                    speakListenBox.isSelected());
+                        }
+                        case "Trade" -> {
+                            String tradeType = (String) tradeTypeBox.getSelectedItem();
+                            skill = new TradeSkill(skillID, victim.getVictimID(),
+                                    proficiency, tradeType);
+                        }
+                        default -> throw new IllegalArgumentException("Unknown category.");
+                    }
+
+                    controller.addSkill(victim.getVictimID(), skill);
+
+                    tabs.setComponentAt(tabIndex, buildSkillsPanel(victim, tabs, tabIndex));
+                    tabs.revalidate();
+                    tabs.repaint();
+
+                    JOptionPane.showMessageDialog(null, "Skill added successfully!");
+
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(null,
+                            "Error: " + ex.getMessage(),
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        // ── Remove skill action ───────────────────────────────────────────────────
+        removeBtn.addActionListener(e -> {
+            int selectedRow = table.getSelectedRow();
+            if (selectedRow == -1) {
+                JOptionPane.showMessageDialog(null,
+                        "Please select a skill first.",
+                        "No Selection", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            int skillID = (int) table.getValueAt(selectedRow, 0);
+            int confirm = JOptionPane.showConfirmDialog(null,
+                    "Remove this skill?", "Confirm", JOptionPane.YES_NO_OPTION);
+
+            if (confirm == JOptionPane.YES_OPTION) {
+                try {
+                    controller.removeSkill(victim.getVictimID(), skillID);
+
+                    tabs.setComponentAt(tabIndex, buildSkillsPanel(victim, tabs, tabIndex));
+                    tabs.revalidate();
+                    tabs.repaint();
+
+                    JOptionPane.showMessageDialog(null, "Skill removed successfully!");
+
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(null,
+                            "Error: " + ex.getMessage(),
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        btnPanel.add(addBtn);
+        btnPanel.add(removeBtn);
+        skillsPanel.add(btnPanel, BorderLayout.SOUTH);
+
+        return skillsPanel;
     }
 
     public void showSupplyManagement() {
