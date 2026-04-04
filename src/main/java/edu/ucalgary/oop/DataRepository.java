@@ -126,4 +126,18 @@ public interface DataRepository {
      * @param skillID the ID of the skill to delete
      */
     void deleteSkill(int skillID);
+
+    /**
+     * Saves a new medical record to the data
+     * @param record the medical record wanting to be stored
+     * @param victimID the ID of the person that the medical record that will be stored
+     */
+    void saveMedicalRecord(MedicalRecord record, int victimID);
+
+    /**
+     * Inserts a family relationship record into the FamilyRelationship table.
+     * @param relation the FamilyRelation to persist
+     * @throws RuntimeException wrapping any SQLException
+     */
+    void saveFamilyConnection(FamilyRelation relation);
 }

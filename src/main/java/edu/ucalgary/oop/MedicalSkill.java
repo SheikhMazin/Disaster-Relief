@@ -19,7 +19,7 @@ public class MedicalSkill extends Skill {
 
     /** Valid certification type options as specified by the feature requirements. */
     public static final String[] VALID_CERTIFICATION_TYPES =
-            { "firstaid", "counseling", "nursing", "doctor" };
+            { "first-aid", "counseling", "nursing", "doctor" };
 
     private String certificationType;
     private LocalDate certificationExpiryDate;

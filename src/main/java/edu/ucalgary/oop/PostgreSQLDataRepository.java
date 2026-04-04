@@ -100,7 +100,14 @@ public class PostgreSQLDataRepository implements DataRepository {
                 if (lastName != null) victim.setLastName(lastName);
 
                 String gender = rs.getString("gender");
-                if (gender != null) victim.setGender(gender);
+                if (gender != null && !gender.trim().isEmpty()) {
+                    try {
+                        victim.setGender(gender);
+                    } catch (IllegalArgumentException e) {
+                        victim.setGender("Please Specify");
+                        victim.setGender(gender);
+                    }
+                }
 
                 String comments = rs.getString("comments");
                 if (comments != null) victim.setComments(comments);
@@ -109,6 +116,12 @@ public class PostgreSQLDataRepository implements DataRepository {
                 if (softDeleted) victim.softDelete();
 
                 victims.add(victim);
+
+                loadMedicalRecords(victim, conn);
+                loadFamilyConnections(victim, conn);
+                loadRequirements(victim, conn);
+                loadSkills(victim, conn);
+
             }
 
         } catch (SQLException e) {
@@ -117,6 +130,184 @@ public class PostgreSQLDataRepository implements DataRepository {
 
         return victims;
     }
+
+    /**
+     * Loads all medical records for the given victim from the MedicalRecord
+     * table and adds them to the victim's in-memory record list.
+     * Called internally by {@link #loadVictims()} after each victim is created.
+     *
+     * @param victim the DisasterVictim to populate with medical records
+     * @param conn   the active database connection
+     * @throws SQLException if a database access error occurs
+     */
+    private void loadMedicalRecords(DisasterVictim victim, Connection conn) throws SQLException {
+        String sql = "SELECT mr.treatment_details, mr.treatment_date, " +
+                "l.id, l.name, l.address " +
+                "FROM MedicalRecord mr " +
+                "JOIN Location l ON mr.location_id = l.id " +
+                "WHERE mr.victim_id = ?";
+
+        PreparedStatement stmt = conn.prepareStatement(sql);
+        stmt.setInt(1, victim.getVictimID());
+        ResultSet rs = stmt.executeQuery();
+
+        while (rs.next()) {
+            Location loc = new Location(
+                    rs.getInt("id"),
+                    rs.getString("name"),
+                    rs.getString("address")
+            );
+            MedicalRecord record = new MedicalRecord(
+                    loc,
+                    rs.getString("treatment_details"),
+                    rs.getDate("treatment_date").toLocalDate()
+            );
+            victim.addMedicalRecord(record);
+        }
+    }
+
+    /**
+     * Loads all cultural and religious requirements for the given victim from
+     * the CulturalRequirement table and adds them to the victim's in-memory
+     * requirements list.
+     * Called internally by {@link #loadVictims()} after each victim is created.
+     *
+     * @param victim the DisasterVictim to populate with requirements
+     * @param conn   the active database connection
+     * @throws SQLException if a database access error occurs
+     */
+    private void loadRequirements(DisasterVictim victim, Connection conn) throws SQLException {
+        String sql = "SELECT requirement_category, requirement_option " +
+                "FROM CulturalRequirement WHERE victim_id = ?";
+
+        PreparedStatement stmt = conn.prepareStatement(sql);
+        stmt.setInt(1, victim.getVictimID());
+        ResultSet rs = stmt.executeQuery();
+
+        while (rs.next()) {
+            VictimRequirement req = new VictimRequirement(
+                    victim.getVictimID(),
+                    rs.getString("requirement_category"),
+                    rs.getString("requirement_option")
+            );
+            victim.addRequirement(req);
+        }
+    }
+
+    /**
+     * Loads all skills registered to the given victim from the VictimSkill
+     * and Skill tables, constructs the appropriate Skill subclass for each
+     * entry, and adds them to the victim's in-memory skills list.
+     * Called internally by {@link #loadVictims()} after each victim is created.
+     *
+     * @param victim the DisasterVictim to populate with skills
+     * @param conn   the active database connection
+     * @throws SQLException if a database access error occurs
+     */
+    private void loadSkills(DisasterVictim victim, Connection conn) throws SQLException {
+        String sql = "SELECT vs.id, vs.proficiency_level, vs.details, " +
+                "vs.language_capabilities, vs.certification_expiry, " +
+                "s.skill_name, s.category " +
+                "FROM VictimSkill vs " +
+                "JOIN Skill s ON vs.skill_id = s.id " +
+                "WHERE vs.victim_id = ?";
+
+        PreparedStatement stmt = conn.prepareStatement(sql);
+        stmt.setInt(1, victim.getVictimID());
+        ResultSet rs = stmt.executeQuery();
+
+        while (rs.next()) {
+            int skillID        = rs.getInt("id");
+            String category    = rs.getString("category");
+            String proficiency = rs.getString("proficiency_level");
+            String skillName   = rs.getString("skill_name");
+
+            Skill skill;
+
+            switch (category.toLowerCase()) {
+                case "medical" -> {
+                    java.sql.Date expSql = rs.getDate("certification_expiry");
+                    LocalDate expiry = expSql != null
+                            ? expSql.toLocalDate()
+                            : LocalDate.now().plusYears(1);
+                    try {
+                        skill = new MedicalSkill(skillID, victim.getVictimID(),
+                                proficiency, skillName, expiry);
+                    } catch (IllegalArgumentException e) {
+                        System.err.println("Warning: skipping invalid medical skill: "
+                                + skillName + " — " + e.getMessage());
+                        continue;
+                    }
+                }
+                case "language" -> {
+                    String caps  = rs.getString("language_capabilities");
+                    boolean rw   = caps != null && caps.contains("read/write");
+                    boolean sl   = caps != null && caps.contains("speak/listen");
+                    if (!rw && !sl) sl = true;
+                    try {
+                        skill = new LanguageSkill(skillID, victim.getVictimID(),
+                                proficiency, skillName, rw, sl);
+                    } catch (IllegalArgumentException e) {
+                        System.err.println("Warning: skipping invalid language skill: "
+                                + skillName + " — " + e.getMessage());
+                        continue;
+                    }
+                }
+                case "trade" -> {
+                    try {
+                        skill = new TradeSkill(skillID, victim.getVictimID(),
+                                proficiency, skillName);
+                    } catch (IllegalArgumentException e) {
+                        System.err.println("Warning: skipping invalid trade skill: "
+                                + skillName + " — " + e.getMessage());
+                        continue;
+                    }
+                }
+                default -> { continue; }
+            }
+
+            victim.addSkill(skill);
+        }
+    }
+
+    /**
+     * Loads all family relationships where the given victim is person one,
+     * from the FamilyRelationship table, and adds them to the victim's
+     * in-memory family connections list.
+     * Called internally by {@link #loadVictims()} after each victim is created.
+     *
+     * @param victim the DisasterVictim to populate with family connections
+     * @param conn   the active database connection
+     * @throws SQLException if a database access error occurs
+     */
+    private void loadFamilyConnections(DisasterVictim victim, Connection conn) throws SQLException {
+        String sql = "SELECT fr.relationship_type, " +
+                "p.id, p.first_name, p.last_name, dv.entry_date " +
+                "FROM FamilyRelationship fr " +
+                "JOIN Person p ON fr.person_two_id = p.id " +
+                "JOIN DisasterVictim dv ON p.id = dv.person_id " +
+                "WHERE fr.person_one_id = ?";
+
+        PreparedStatement stmt = conn.prepareStatement(sql);
+        stmt.setInt(1, victim.getVictimID());
+        ResultSet rs = stmt.executeQuery();
+
+        while (rs.next()) {
+            int relatedID    = rs.getInt("id");
+            String firstName = rs.getString("first_name");
+            LocalDate entry  = rs.getDate("entry_date").toLocalDate();
+            String relType   = rs.getString("relationship_type");
+
+            DisasterVictim related = new DisasterVictim(relatedID, firstName, entry);
+            String lastName = rs.getString("last_name");
+            if (lastName != null) related.setLastName(lastName);
+
+            FamilyRelation relation = new FamilyRelation(victim, relType, related);
+            victim.addFamilyConnection(relation);
+        }
+    }
+
+
 
     /**
      * Loads all location records from the Location table.
@@ -682,6 +873,58 @@ public class PostgreSQLDataRepository implements DataRepository {
 
         } catch (SQLException e) {
             throw new RuntimeException("Failed to delete skill: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Inserts a new medical record for a victim into the MedicalRecord table.
+     *
+     * @param record   the MedicalRecord to persist
+     * @param victimID the ID of the victim this record belongs to
+     * @throws RuntimeException wrapping any SQLException
+     */
+    @Override
+    public void saveMedicalRecord(MedicalRecord record, int victimID) {
+        String sql = "INSERT INTO MedicalRecord " +
+                "(victim_id, treatment_details, treatment_date, location_id) " +
+                "VALUES (?, ?, ?, ?)";
+
+        try {
+            Connection conn = dbManager.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            stmt.setInt(1, victimID);
+            stmt.setString(2, record.getTreatmentDetails());
+            stmt.setDate(3, java.sql.Date.valueOf(record.getDateOfTreatment()));
+            stmt.setInt(4, record.getLocation().getLocationID());
+            stmt.executeUpdate();
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to save medical record: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Inserts a family relationship record into the FamilyRelationship table.
+     *
+     * @param relation the FamilyRelation to persist
+     * @throws RuntimeException wrapping any SQLException
+     */
+    @Override
+    public void saveFamilyConnection(FamilyRelation relation) {
+        String sql = "INSERT INTO FamilyRelationship " +
+                "(person_one_id, person_two_id, relationship_type) " +
+                "VALUES (?, ?, ?)";
+
+        try {
+            Connection conn = dbManager.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            stmt.setInt(1, relation.getPersonOne().getVictimID());
+            stmt.setInt(2, relation.getPersonTwo().getVictimID());
+            stmt.setString(3, relation.getRelationshipTo());
+            stmt.executeUpdate();
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to save family connection: " + e.getMessage(), e);
         }
     }
 }

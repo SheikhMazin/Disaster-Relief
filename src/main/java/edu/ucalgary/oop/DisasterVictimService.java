@@ -171,6 +171,7 @@ public class DisasterVictimService {
             throw new IllegalArgumentException("No victim found with ID: " + victimID);
         }
         victim.addMedicalRecord(record);
+        repository.saveMedicalRecord(record, victimID);
         repository.updateVictim(victim);
         logger.logAdded("medical record",
                 String.format("Victim ID: %d | Treatment: %s | Date: %s",
@@ -200,6 +201,7 @@ public class DisasterVictimService {
             throw new IllegalArgumentException("No victim found with ID: " + victimID);
         }
         victim.addFamilyConnection(relation);
+        repository.saveFamilyConnection(relation);
         repository.updateVictim(victim);
         logger.logAdded("family connection",
                 String.format("Victim ID: %d | Relationship: %s | Related to victim ID: %d",

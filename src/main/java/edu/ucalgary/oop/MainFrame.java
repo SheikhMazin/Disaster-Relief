@@ -2,6 +2,8 @@ package edu.ucalgary.oop;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.time.LocalDate;
 import java.util.ArrayList;
 
@@ -70,11 +72,11 @@ public class MainFrame extends JFrame{
                 inquiriesBtn, skillsBtn, exitBtn}) {
             Color original = btn.getBackground(); // captures each button's own color
             Color hover    = original.brighter();
-            btn.addMouseListener(new java.awt.event.MouseAdapter() {
-                public void mouseEntered(java.awt.event.MouseEvent evt) {
+            btn.addMouseListener(new MouseAdapter() {
+                public void mouseEntered(MouseEvent evt) {
                     btn.setBackground(hover);
                 }
-                public void mouseExited(java.awt.event.MouseEvent evt) {
+                public void mouseExited(MouseEvent evt) {
                     btn.setBackground(original);
                 }
             });
@@ -142,6 +144,7 @@ public class MainFrame extends JFrame{
         JButton addBtn         = new JButton("Add Victim");
         JButton softDeleteBtn  = new JButton("Soft Delete");
         JButton hardDeleteBtn  = new JButton("Hard Delete");
+        JButton viewDetailsBtn    = new JButton("View Details");
 
         hardDeleteBtn.setBackground(new Color(180, 60, 60));
         hardDeleteBtn.setForeground(Color.WHITE);
@@ -149,21 +152,33 @@ public class MainFrame extends JFrame{
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         btnPanel.add(addBtn);
         btnPanel.add(softDeleteBtn);
+        btnPanel.add(viewDetailsBtn);
         btnPanel.add(hardDeleteBtn);
 
         // ── Add victim action ─────────────────────────────────────────────────────
         addBtn.addActionListener(e -> {
-            JTextField firstNameField = new JTextField();
-            JTextField lastNameField  = new JTextField();
-            JTextField ageField       = new JTextField();
-            JTextField dobField       = new JTextField("YYYY-MM-DD");
-            String[] genderOptions    = {"Man", "Woman", "Boy", "Girl", "Non-binary person"};
-            JComboBox<String> genderBox = new JComboBox<>(genderOptions);
+            JTextField firstNameField       = new JTextField();
+            JTextField lastNameField        = new JTextField();
+            JTextField ageField             = new JTextField();
+            JTextField dobField             = new JTextField("YYYY-MM-DD");
+            JTextField customGenderField    = new JTextField();
+            customGenderField.setVisible(false); // hidden by default
+
+            String[] genderOptions          = {"Man", "Woman", "Boy", "Girl", "Non-binary person", "Please Specify"};
+            JComboBox<String> genderBox     = new JComboBox<>(genderOptions);
+
+
+            // Show/Hide custom gender field based on selection
+            genderBox.addActionListener(c -> {
+                boolean isPlease = genderBox.getSelectedItem().equals("Please Specify");
+                customGenderField.setVisible(isPlease);
+            });
 
             Object[] fields = {
                     "First Name:",  firstNameField,
                     "Last Name:",   lastNameField,
                     "Gender:",      genderBox,
+                    "Specify gender (if Please Specify):", customGenderField,
                     "Date of Birth (leave blank if unknown):", dobField,
                     "Approx Age (leave blank if DOB known):",  ageField
             };
@@ -175,9 +190,10 @@ public class MainFrame extends JFrame{
                 try {
                     String firstName = firstNameField.getText().trim();
                     String lastName  = lastNameField.getText().trim();
-                    String gender    = (String) genderBox.getSelectedItem();
+                    String gender;
                     String dob       = dobField.getText().trim();
                     String age       = ageField.getText().trim();
+
 
                     DisasterVictim victim;
 
@@ -201,8 +217,16 @@ public class MainFrame extends JFrame{
                     }
 
                     if (!lastName.isEmpty()) victim.setLastName(lastName);
-                    victim.setGender(gender);
 
+                    if (genderBox.getSelectedItem().equals("Please Specify")) {
+                        if (!customGenderField.getText().trim().isEmpty()) {
+                            victim.setGender("Please Specify");
+                            victim.setGender(customGenderField.getText().trim());
+                        } else {
+                            // nothing typed - just set Please Specify
+                            victim.setGender("Please Specify");
+                        }
+                    }
                     controller.addVictim(victim);
                     showVictimManagement(); // refresh
 
@@ -241,6 +265,40 @@ public class MainFrame extends JFrame{
             }
         });
 
+
+        // ── View Details action ─────────────────────────────────────────────────────
+        viewDetailsBtn.addActionListener(e -> {
+            int selectedRow = table.getSelectedRow();
+            if (selectedRow == -1) {
+                JOptionPane.showMessageDialog(this,
+                        "Please select a victim first.",
+                        "No Selection", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            int victimID = (int) table.getValueAt(selectedRow, 0);
+            DisasterVictim victim = controller.getVictimByID(victimID);
+
+            JTabbedPane tabs = new JTabbedPane();
+
+            JPanel medicalPanel = new JPanel();
+            JPanel familyPanel = new JPanel();
+            JPanel skillsPanel = new JPanel();
+
+            tabs.addTab("Info", buildInfoPanel(victim));
+            tabs.addTab("Medical Records", buildMedicalPanel(victim));
+            tabs.addTab("Family", familyPanel);
+            tabs.addTab("Skills", skillsPanel);
+
+            JDialog dialog = new JDialog(this, "Victim Details - " + victim.getFirstName(), true);
+            dialog.setSize(700, 500);
+            dialog.setLocationRelativeTo(this);
+            dialog.setLayout(new BorderLayout());
+            dialog.add(tabs, BorderLayout.CENTER);
+            dialog.setVisible(true);
+        });
+
+
         // ── Hard delete action ────────────────────────────────────────────────────
         hardDeleteBtn.addActionListener(e -> {
             int selectedRow = table.getSelectedRow();
@@ -269,6 +327,8 @@ public class MainFrame extends JFrame{
             }
         });
 
+
+
         // ── Assemble panel ────────────────────────────────────────────────────────
         JPanel panel = new JPanel(new BorderLayout());
         JLabel heading = new JLabel("Victim Management");
@@ -282,6 +342,154 @@ public class MainFrame extends JFrame{
         contentPanel.add(panel);
         contentPanel.revalidate();
         contentPanel.repaint();
+    }
+
+    private JPanel buildInfoPanel(DisasterVictim victim) {
+        JPanel infoPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 10, 5, 10);
+        gbc.anchor = GridBagConstraints.WEST;
+
+        Font labelFont = new Font("Arial", Font.BOLD, 14);
+        Font valueFont = new Font("Arial", Font.PLAIN, 14);
+
+        int row = 0;
+
+        // ── Heading ───────────────────────────────────────────────────────────────
+        JLabel heading = new JLabel("Victim Information");
+        heading.setFont(new Font("Arial", Font.BOLD, 20));
+        gbc.gridx = 0; gbc.gridy = row;
+        gbc.gridwidth = 2;
+        gbc.insets = new Insets(10, 10, 20, 10);
+        infoPanel.add(heading, gbc);
+        gbc.gridwidth = 1;
+        gbc.insets = new Insets(5, 10, 5, 10);
+        row++;
+
+        // ── ID ────────────────────────────────────────────────────────────────────
+        JLabel idLabel = new JLabel("Victim ID:");
+        JLabel idValue = new JLabel(String.valueOf(victim.getVictimID()));
+        idLabel.setFont(labelFont);
+        idValue.setFont(valueFont);
+        gbc.gridx = 0; gbc.gridy = row;
+        infoPanel.add(idLabel, gbc);
+        gbc.gridx = 1;
+        infoPanel.add(idValue, gbc);
+        row++;
+
+        // ── First Name ────────────────────────────────────────────────────────────
+        JLabel firstNameLabel = new JLabel("First Name:");
+        JLabel firstNameValue = new JLabel(victim.getFirstName());
+        firstNameLabel.setFont(labelFont);
+        firstNameValue.setFont(valueFont);
+        gbc.gridx = 0; gbc.gridy = row;
+        infoPanel.add(firstNameLabel, gbc);
+        gbc.gridx = 1;
+        infoPanel.add(firstNameValue, gbc);
+        row++;
+
+        // ── Last Name ─────────────────────────────────────────────────────────────
+        JLabel lastNameLabel = new JLabel("Last Name:");
+        JLabel lastNameValue = new JLabel(victim.getLastName() != null
+                ? victim.getLastName() : "N/A");
+        lastNameLabel.setFont(labelFont);
+        lastNameValue.setFont(valueFont);
+        gbc.gridx = 0; gbc.gridy = row;
+        infoPanel.add(lastNameLabel, gbc);
+        gbc.gridx = 1;
+        infoPanel.add(lastNameValue, gbc);
+        row++;
+
+        // ── Gender ────────────────────────────────────────────────────────────────
+        JLabel genderLabel = new JLabel("Gender:");
+        JLabel genderValue = new JLabel(victim.getGender() != null
+                ? victim.getGender() : "N/A");
+        genderLabel.setFont(labelFont);
+        genderValue.setFont(valueFont);
+        gbc.gridx = 0; gbc.gridy = row;
+        infoPanel.add(genderLabel, gbc);
+        gbc.gridx = 1;
+        infoPanel.add(genderValue, gbc);
+        row++;
+
+        // ── Date of Birth / Approximate Age ──────────────────────────────────────
+        JLabel ageLabel = new JLabel("Date of Birth / Age:");
+        String ageInfo = victim.getDateOfBirth() != null
+                ? victim.getDateOfBirth().toString()
+                : victim.getApproximateAge() != null
+                  ? "~" + victim.getApproximateAge() + " yrs"
+                  : "N/A";
+        JLabel ageValue = new JLabel(ageInfo);
+        ageLabel.setFont(labelFont);
+        ageValue.setFont(valueFont);
+        gbc.gridx = 0; gbc.gridy = row;
+        infoPanel.add(ageLabel, gbc);
+        gbc.gridx = 1;
+        infoPanel.add(ageValue, gbc);
+        row++;
+
+        // ── Entry Date ────────────────────────────────────────────────────────────
+        JLabel entryLabel = new JLabel("Entry Date:");
+        JLabel entryValue = new JLabel(victim.getEntryDate().toString());
+        entryLabel.setFont(labelFont);
+        entryValue.setFont(valueFont);
+        gbc.gridx = 0; gbc.gridy = row;
+        infoPanel.add(entryLabel, gbc);
+        gbc.gridx = 1;
+        infoPanel.add(entryValue, gbc);
+        row++;
+
+        // ── Comments ──────────────────────────────────────────────────────────────
+        JLabel commentsLabel = new JLabel("Comments:");
+        JLabel commentsValue = new JLabel(victim.getComments() != null
+                ? victim.getComments() : "N/A");
+        commentsLabel.setFont(labelFont);
+        commentsValue.setFont(valueFont);
+        gbc.gridx = 0; gbc.gridy = row;
+        infoPanel.add(commentsLabel, gbc);
+        gbc.gridx = 1;
+        infoPanel.add(commentsValue, gbc);
+        row++;
+
+        // ── Soft Deleted status ───────────────────────────────────────────────────
+        JLabel deletedLabel = new JLabel("Status:");
+        JLabel deletedValue = new JLabel(victim.isSoftDeleted() ? "Soft Deleted" : "Active");
+        deletedLabel.setFont(labelFont);
+        deletedValue.setFont(valueFont);
+        deletedValue.setForeground(victim.isSoftDeleted()
+                ? new Color(180, 60, 60) : new Color(60, 150, 60));
+        gbc.gridx = 0; gbc.gridy = row;
+        infoPanel.add(deletedLabel, gbc);
+        gbc.gridx = 1;
+        infoPanel.add(deletedValue, gbc);
+
+        return infoPanel;
+    }
+
+    private JPanel buildMedicalPanel(DisasterVictim victim){
+        // ── Build table ───────────────────────────────────────────────────────────
+        ArrayList<MedicalRecord> medicalRecords = victim.getMedicalRecords();
+
+        String[] columns = {"Location", "Treatment Details", "Date of Treatment"};
+        Object[][] data  = new Object[medicalRecords.size()][3];
+
+        for (int i = 0; i < medicalRecords.size(); i++){
+            MedicalRecord record = medicalRecords.get(i);
+            data[i][0] = record.getLocation().getName();
+            data[i][1] = record.getTreatmentDetails();
+            data[i][2] = record.getDateOfTreatment();
+        }
+
+        JPanel medicalRecordPanel = new JPanel(new BorderLayout());
+
+        JTable table = new JTable(data, columns);
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        table.setRowHeight(25);
+
+        JScrollPane scrollPane = new JScrollPane(table);
+        medicalRecordPanel.add(scrollPane, BorderLayout.CENTER);
+
+        return medicalRecordPanel;
     }
 
     public void showSupplyManagement() {
