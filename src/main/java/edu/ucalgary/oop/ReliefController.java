@@ -400,5 +400,24 @@ public class ReliefController {
         return skillService.getNextSkillID();
     }
 
+
+    /**
+     * Saves a new inquirer to the database and returns their generated ID.
+     *
+     * @param inquirer non-null Inquirer to persist
+     * @return the database-generated ID for the inquirer
+     */
+    public int saveInquirer(Inquirer inquirer) {
+        return inquiryService.saveInquirer(inquirer);
+    }
+
+    /**
+     * Returns the next available inquiry ID from the database.
+     *
+     * @return next available integer ID
+     */
+    public int getNextInquiryID() {
+        return inquiryService.getNextInquiryID();
+    }
     
 }

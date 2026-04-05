@@ -18,3 +18,5 @@
 [2026-04-04] DELETED disaster victim | ID: 929 | Name: Awais Seed
 [2026-04-04] ADDED disaster victim | ID: 9 | Name: Awais Seed
 [2026-04-04] ADDED supply | ID: 9744 | Type: sadfg | Quantity: 1
+[2026-04-05] ADDED inquiry | ID: 2 | Inquirer: Sheikh Mazin | Missing person: Amina Al-Farsi
+[2026-04-05] UPDATED inquiry | ID: 2 | Inquiry #2 | Inquirer: Sheikh Mazin | Missing: Amina Al-Farsi | Date: 2026-04-05 | Last known location: Unknown | Info: He the best

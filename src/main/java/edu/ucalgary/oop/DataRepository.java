@@ -147,4 +147,9 @@ public interface DataRepository {
      * @throws RuntimeException wrapping any SQLException
      */
     void saveFamilyConnection(FamilyRelation relation);
+
+
+    int saveInquirer(Inquirer inquirer);
+
+    int getNextInquiryID();
 }

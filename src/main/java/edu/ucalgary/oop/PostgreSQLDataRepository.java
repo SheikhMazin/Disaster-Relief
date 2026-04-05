@@ -476,8 +476,9 @@ public class PostgreSQLDataRepository implements DataRepository {
      */
     @Override
     public void saveVictim(DisasterVictim victim) {
-        String personSql = "INSERT INTO Person (id, first_name, last_name, comments) " +
-                "VALUES (?, ?, ?, ?)";
+        // Do NOT include id — let SERIAL generate it
+        String personSql = "INSERT INTO Person (first_name, last_name, comments) " +
+                "VALUES (?, ?, ?) RETURNING id";
         String victimSql = "INSERT INTO DisasterVictim " +
                 "(person_id, date_of_birth, approximate_age, gender, " +
                 "entry_date, is_soft_deleted) " +
@@ -486,22 +487,24 @@ public class PostgreSQLDataRepository implements DataRepository {
         try {
             Connection conn = dbManager.getConnection();
 
+            // Insert into Person and get generated ID
             PreparedStatement pStmt = conn.prepareStatement(personSql);
-            pStmt.setInt(1, victim.getVictimID());
-            pStmt.setString(2, victim.getFirstName());
-            pStmt.setString(3, victim.getLastName());
-            pStmt.setString(4, victim.getComments());
-            pStmt.executeUpdate();
+            pStmt.setString(1, victim.getFirstName());
+            pStmt.setString(2, victim.getLastName());
+            pStmt.setString(3, victim.getComments());
+            ResultSet rs    = pStmt.executeQuery();
+            rs.next();
+            int generatedID = rs.getInt("id");
 
+            // Insert into DisasterVictim using generated ID
             PreparedStatement vStmt = conn.prepareStatement(victimSql);
-            vStmt.setInt(1, victim.getVictimID());
+            vStmt.setInt(1, generatedID);
 
             if (victim.getDateOfBirth() != null) {
                 vStmt.setDate(2, java.sql.Date.valueOf(victim.getDateOfBirth()));
             } else {
                 vStmt.setNull(2, java.sql.Types.DATE);
             }
-
             if (victim.getApproximateAge() != null) {
                 vStmt.setInt(3, victim.getApproximateAge());
             } else {
@@ -517,7 +520,6 @@ public class PostgreSQLDataRepository implements DataRepository {
             throw new RuntimeException("Failed to save victim: " + e.getMessage(), e);
         }
     }
-
 
 
     /**
@@ -1009,6 +1011,52 @@ public class PostgreSQLDataRepository implements DataRepository {
             return rs.getInt("next_id");
         } catch (SQLException e) {
             throw new RuntimeException("Failed to get next skill ID: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Inserts a new inquirer into the Person table and returns the
+     * database-generated ID.
+     *
+     * @param inquirer the Inquirer to persist
+     * @return the generated person ID
+     * @throws RuntimeException wrapping any SQLException
+     */
+    @Override
+    public int saveInquirer(Inquirer inquirer) {
+        String sql = "INSERT INTO Person (first_name, last_name, comments) " +
+                "VALUES (?, ?, ?) RETURNING id";
+        try {
+            Connection conn = dbManager.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            stmt.setString(1, inquirer.getFirstName());
+            stmt.setString(2, inquirer.getLastName());
+            stmt.setString(3, inquirer.getInfo());
+            ResultSet rs = stmt.executeQuery();
+            rs.next();
+            return rs.getInt("id");
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to save inquirer: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Returns the next available ID for a new Inquiry record.
+     *
+     * @return next available integer ID
+     * @throws RuntimeException wrapping any SQLException
+     */
+    @Override
+    public int getNextInquiryID() {
+        String sql = "SELECT COALESCE(MAX(id), 0) + 1 AS next_id FROM Inquiry";
+        try {
+            Connection conn = dbManager.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery();
+            rs.next();
+            return rs.getInt("next_id");
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to get next inquiry ID: " + e.getMessage(), e);
         }
     }
 
