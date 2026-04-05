@@ -70,7 +70,7 @@ public class SupplyService {
         return supplies;
     }
 
-    
+
     // =========================================================================
     //  Add / Update
     // =========================================================================
@@ -200,4 +200,14 @@ public class SupplyService {
         }
         return sb.toString();
     }
+
+    /**
+     * Returns the next available supply ID from the database.
+     *
+     * @return next available integer ID
+     */
+    public int getNextSupplyID() {
+        return repository.getNextSupplyID();
+    }
+    
 }

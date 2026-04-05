@@ -55,7 +55,6 @@ public class SkillService {
      * registered for that victim — this is enforced by
      * {@link DisasterVictim#addSkill(Skill)}.
      *
-     * @param victimID the ID of the victim to add the skill to
      * @param victim   non-null DisasterVictim who owns the skill
      * @param skill    non-null Skill to register
      * @throws IllegalArgumentException if victim or skill is null, or if the
@@ -146,4 +145,15 @@ public class SkillService {
         }
         return victim.getSkills();
     }
+
+    /**
+     * Returns the next available skill ID from the database.
+     *
+     * @return next available integer ID
+     */
+    public int getNextSkillID() {
+        return repository.getNextSkillID();
+    }
+
+
 }

@@ -372,4 +372,33 @@ public class ReliefController {
     public ArrayList<Skill> searchSkillsByCategory(String category) {
         return skillService.searchByCategory(victimService.getAllVictims(), category);
     }
+
+    /**
+     * Returns the next available victim ID from the database.
+     *
+     * @return next available integer ID
+     */
+    public int getNextVictimID() {
+        return victimService.getNextVictimID();
+    }
+
+    /**
+     * Returns the next available supply ID from the database.
+     *
+     * @return next available integer ID
+     */
+    public int getNextSupplyID() {
+        return supplyService.getNextSupplyID();
+    }
+
+    /**
+     * Returns the next available skill ID from the database.
+     *
+     * @return next available integer ID
+     */
+    public int getNextSkillID() {
+        return skillService.getNextSkillID();
+    }
+
+    
 }

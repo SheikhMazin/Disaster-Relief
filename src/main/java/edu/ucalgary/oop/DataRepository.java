@@ -70,6 +70,8 @@ public interface DataRepository {
      */
     void hardDeleteVictim(int victimID);
 
+
+    int getNextVictimID();
     // ── Supply ────────────────────────────────────────────────────────────────
 
     /**
@@ -113,6 +115,8 @@ public interface DataRepository {
      */
     void deleteRequirement(int victimID, String requirementType);
 
+    int getNextSupplyID();
+
     // ── Skills ────────────────────────────────────────────────────────────────
 
     /**
@@ -127,6 +131,9 @@ public interface DataRepository {
      */
     void deleteSkill(int skillID);
 
+    int getNextSkillID();
+
+    
     /**
      * Saves a new medical record to the data
      * @param record the medical record wanting to be stored

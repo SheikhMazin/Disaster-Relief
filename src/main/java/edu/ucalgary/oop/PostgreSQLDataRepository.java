@@ -518,6 +518,8 @@ public class PostgreSQLDataRepository implements DataRepository {
         }
     }
 
+
+
     /**
      * Updates an existing disaster victim record across the Person and
      * DisasterVictim tables.
@@ -949,4 +951,66 @@ public class PostgreSQLDataRepository implements DataRepository {
             throw new RuntimeException("Failed to save family connection: " + e.getMessage(), e);
         }
     }
+
+    /**
+     * Returns the next available ID for a new Person record.
+     *
+     * @return next available integer ID
+     * @throws RuntimeException wrapping any SQLException
+     */
+    @Override
+    public int getNextVictimID() {
+        String sql = "SELECT COALESCE(MAX(id), 0) + 1 AS next_id FROM Person";
+        try {
+            Connection conn = dbManager.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery();
+            rs.next();
+            return rs.getInt("next_id");
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to get next victim ID: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Returns the next available ID for a new Supply record.
+     *
+     * @return next available integer ID
+     * @throws RuntimeException wrapping any SQLException
+     */
+    @Override
+    public int getNextSupplyID() {
+        String sql = "SELECT COALESCE(MAX(id), 0) + 1 AS next_id FROM Supply";
+        try {
+            Connection conn = dbManager.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery();
+            rs.next();
+            return rs.getInt("next_id");
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to get next supply ID: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Returns the next available ID for a new VictimSkill record.
+     *
+     * @return next available integer ID
+     * @throws RuntimeException wrapping any SQLException
+     */
+    @Override
+    public int getNextSkillID() {
+        String sql = "SELECT COALESCE(MAX(id), 0) + 1 AS next_id FROM VictimSkill";
+        try {
+            Connection conn = dbManager.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery();
+            rs.next();
+            return rs.getInt("next_id");
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to get next skill ID: " + e.getMessage(), e);
+        }
+    }
+
+
 }

@@ -365,4 +365,13 @@ public class DisasterVictimService {
     public ArrayList<DisasterVictim> getAllVictims() {
         return victims;
     }
+
+    /**
+     * Returns the next available victim ID from the database.
+     *
+     * @return next available integer ID
+     */
+    public int getNextVictimID() {
+        return repository.getNextVictimID();
+    }
 }

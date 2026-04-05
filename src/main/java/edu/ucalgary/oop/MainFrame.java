@@ -199,22 +199,23 @@ public class MainFrame extends JFrame{
 
 
                     DisasterVictim victim;
+                    int id = controller.getNextVictimID();
 
                     if (!dob.isEmpty() && !dob.equals("YYYY-MM-DD")) {
                         victim = new DisasterVictim(
-                                (int)(Math.random() * 10000) + 1,
+                                id,
                                 firstName,
                                 LocalDate.now(),
                                 LocalDate.parse(dob));
                     } else if (!age.isEmpty()) {
                         victim = new DisasterVictim(
-                                (int)(Math.random() * 10000) + 1,
+                                id,
                                 firstName,
                                 LocalDate.now(),
                                 Integer.parseInt(age));
                     } else {
                         victim = new DisasterVictim(
-                                (int)(Math.random() * 10000) + 1,
+                                id,
                                 firstName,
                                 LocalDate.now());
                     }
@@ -452,14 +453,16 @@ public class MainFrame extends JFrame{
 
                     // ── Create supply ─────────────────────────────────────────────────
                     Supply supply;
+                    int id = controller.getNextSupplyID();
+
                     if (isPerishable) {
                         LocalDate expiry = LocalDate.parse(expiryDate.getText().trim());
                         supply = new Supply(
-                                (int)(Math.random() * 10000) + 1,
+                                id,
                                 type, 1, true, expiry);
                     } else {
                         supply = new Supply(
-                                (int)(Math.random() * 10000) + 1,
+                                id,
                                 type, 1);
                     }
 
