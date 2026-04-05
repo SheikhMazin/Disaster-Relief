@@ -247,6 +247,18 @@ public class ReliefController {
         return supplyService.getAvailableSupplies();
     }
 
+
+    /**
+     * Returns all supplies including expired ones.
+     * Used to display the full inventory in the supply management screen.
+     *
+     * @return list of all Supply objects
+     */
+    public ArrayList<Supply> getAllSupplies() {
+        return supplyService.getAllSupplies();
+    }
+
+
     /**
      * Returns a warning string listing all expired supplies, or empty string
      * if none are expired.

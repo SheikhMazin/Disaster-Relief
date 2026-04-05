@@ -349,7 +349,7 @@ public class PostgreSQLDataRepository implements DataRepository {
     @Override
     public ArrayList<Supply> loadSupplies() {
         ArrayList<Supply> supplies = new ArrayList<>();
-        String sql = "SELECT id, supply_type, expiry_date FROM Supply";
+        String sql = "SELECT id, supply_type, expiry_date, victim_id FROM Supply";
 
         try {
             Connection conn = dbManager.getConnection();
@@ -357,14 +357,36 @@ public class PostgreSQLDataRepository implements DataRepository {
             ResultSet rs = stmt.executeQuery();
 
             while (rs.next()) {
-                int id          = rs.getInt("id");
-                String type     = rs.getString("supply_type");
+                int id           = rs.getInt("id");
+                String type      = rs.getString("supply_type");
                 java.sql.Date expSql = rs.getDate("expiry_date");
-                LocalDate expiry    = (expSql != null) ? expSql.toLocalDate() : null;
+                LocalDate expiry     = (expSql != null) ? expSql.toLocalDate() : null;
+                boolean perishable   = (expiry != null);
 
-                // A supply is perishable if it has an expiry date
-                boolean perishable = (expiry != null);
                 Supply supply = new Supply(id, type, 1, perishable, expiry);
+
+                // ── Load allocated victim if exists ───────────────────────────
+                int victimID = rs.getInt("victim_id");
+                if (!rs.wasNull()) {
+                    String victimSql = "SELECT p.id, p.first_name, p.last_name, " +
+                            "dv.entry_date FROM Person p " +
+                            "JOIN DisasterVictim dv ON p.id = dv.person_id " +
+                            "WHERE p.id = ?";
+                    PreparedStatement vStmt = conn.prepareStatement(victimSql);
+                    vStmt.setInt(1, victimID);
+                    ResultSet vRs = vStmt.executeQuery();
+                    if (vRs.next()) {
+                        DisasterVictim victim = new DisasterVictim(
+                                vRs.getInt("id"),
+                                vRs.getString("first_name"),
+                                vRs.getDate("entry_date").toLocalDate()
+                        );
+                        String lastName = vRs.getString("last_name");
+                        if (lastName != null) victim.setLastName(lastName);
+                        supply.allocateTo(victim);
+                    }
+                }
+
                 supplies.add(supply);
             }
 

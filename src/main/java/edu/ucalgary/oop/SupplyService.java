@@ -60,6 +60,17 @@ public class SupplyService {
         return this.supplies;
     }
 
+    /**
+     * Returns all supplies currently loaded in memory, including expired ones.
+     * Used by the UI to display the complete inventory.
+     *
+     * @return full list of all Supply objects
+     */
+    public ArrayList<Supply> getAllSupplies() {
+        return supplies;
+    }
+
+    
     // =========================================================================
     //  Add / Update
     // =========================================================================

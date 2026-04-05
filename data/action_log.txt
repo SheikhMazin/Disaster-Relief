@@ -8,3 +8,10 @@
 [2026-04-03] ADDED medical record | Victim ID: 3 | Treatment: adfasdf | Date: 2026-04-03
 [2026-04-03] ADDED medical record | Victim ID: 3 | Treatment: sdfsaf | Date: 2026-04-03
 [2026-04-03] ADDED family connection | Victim ID: 2 | Relationship: son | Related to victim ID: 8
+[2026-04-04] ADDED supply | ID: 4726 | Type: water | Quantity: 1
+[2026-04-04] ADDED supply | ID: 9743 | Type: water | Quantity: 1
+[2026-04-04] UPDATED supply | ID: 4726 | Type: water -> allocated to victim 4 (Amina)
+[2026-04-04] UPDATED supply | ID: 6 | Type: blanket -> allocated to victim 4 (Amina)
+[2026-04-04] UPDATED supply | ID: 4726 | Type: water -> allocated to victim 4 (Amina)
+[2026-04-04] DELETED requirement | Victim ID: 2 | Type: dietary restrictions
+[2026-04-04] ADDED requirement | Victim ID: 2 | Type: prayer needs | Option: prayer mat
