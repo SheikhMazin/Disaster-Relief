@@ -16,14 +16,15 @@ public class MainFrame extends JFrame{
     private VictimUI victimUI;
     private SupplyUI supplyUI;
     private InquiryUI inquiryUI;
+    private SkillUI skillUI;
 
    public MainFrame(ReliefController controller){
        this.controller = controller;
        this.victimUI = new VictimUI(controller);
        this.victimManagementUI = new VictimManagementUI(controller, victimUI);
        this.inquiryUI = new InquiryUI(controller);
-
        this.supplyUI = new SupplyUI(controller);
+       this.skillUI = new SkillUI(controller);
 
        setTitle("Disaster Relief System");
        setSize(1024, 768);
@@ -138,13 +139,7 @@ public class MainFrame extends JFrame{
         inquiryUI.show(contentPanel);
     }
 
-    public void showSkillManagement() {
-        contentPanel.removeAll();
-        contentPanel.add(new JLabel("Skills"), BorderLayout.NORTH);
-
-        contentPanel.revalidate();
-        contentPanel.repaint();
-    }
+    public void showSkillManagement() { skillUI.show(contentPanel); }
 
 
 

@@ -20,3 +20,6 @@
 [2026-04-04] ADDED supply | ID: 9744 | Type: sadfg | Quantity: 1
 [2026-04-05] ADDED inquiry | ID: 2 | Inquirer: Sheikh Mazin | Missing person: Amina Al-Farsi
 [2026-04-05] UPDATED inquiry | ID: 2 | Inquiry #2 | Inquirer: Sheikh Mazin | Missing: Amina Al-Farsi | Date: 2026-04-05 | Last known location: Unknown | Info: He the best
+[2026-04-06] SOFT DELETED disaster victim | ID: 9 | Name: Awais Seed
+[2026-04-06] SOFT DELETED disaster victim | ID: 2 | Name: Freda McDonald
+[2026-04-06] DELETED disaster victim | ID: 3 | Name: Elisabeth ten Boom

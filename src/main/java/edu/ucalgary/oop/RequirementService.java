@@ -6,7 +6,7 @@ package edu.ucalgary.oop;
  * Service class responsible for managing cultural and religious requirement
  * options available in the system. Available requirement types and their
  * options are loaded at startup from a serialized file named
- * available_requirements.ser located in the resources' directory.
+ * available_requirements1.ser located in the resources' directory.
  * The file contains a serialized CulturalOptions object whose accommodations
  * field is a HashMap mapping requirement type strings to sets of valid options.
  *
@@ -61,7 +61,7 @@ public class RequirementService {
      * The program should call this once at startup. If the file cannot be
      * found or read, an error message is printed and the application exits.
      *
-     * @param fileName path to the serialized available_requirements.ser file
+     * @param fileName path to the serialized available_requirements1.ser file
      * @throws IllegalArgumentException if fileName is null or blank
      * @throws IOException              if the file cannot be read
      * @throws ClassNotFoundException   if the serialized class cannot be found

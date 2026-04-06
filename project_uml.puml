@@ -1,10 +1,10 @@
 @startuml
 skinparam classAttributeIconSize 0
 skinparam linetype ortho
-skinparam nodesep 50
-skinparam ranksep 70
+skinparam nodesep 55
+skinparam ranksep 75
 skinparam defaultFontSize 11
-skinparam wrapWidth 300
+skinparam wrapWidth 320
 skinparam classFontStyle bold
 skinparam classAttributeFontSize 10
 skinparam padding 5
@@ -18,7 +18,7 @@ skinparam class {
 }
 
 ' ─────────────────────────────────────────────
-'  ROW 1: Entry Point
+'  ROW 1 — Entry Point
 ' ─────────────────────────────────────────────
 
 class Main {
@@ -27,16 +27,16 @@ class Main {
 
 class MainFrame {
   -controller : ReliefController
+  -mainPanel : JPanel
+  -contentPanel : JPanel
+  -victimManagementUI : VictimManagementUI
+  -victimUI : VictimUI
+  -supplyUI : SupplyUI
+  -inquiryUI : InquiryUI
+  -skillUI : SkillUI
   --
   +MainFrame(controller : ReliefController)
-  +showMainMenu() : void
-  +showVictimManagement() : void
-  +showSupplyManagement() : void
-  +showInquiryManagement() : void
-  +showSkillManagement() : void
-  +showRequirementManagement() : void
-  +showMessage(message : String) : void
-  +showError(errorMessage : String) : void
+  -initComponents() : void
 }
 
 class ReliefController {
@@ -45,13 +45,87 @@ class ReliefController {
   -inquiryService : InquiryService
   -requirementService : RequirementService
   -skillService : SkillService
+  -{static} REQUIREMENTS_FILE : String = "src/main/resources/available_requirements.ser"
   --
   +ReliefController(victimService : DisasterVictimService,\n  supplyService : SupplyService,\n  inquiryService : InquiryService,\n  requirementService : RequirementService,\n  skillService : SkillService)
   +startApplication() : void
+  +getActiveVictims() : ArrayList<DisasterVictim>
+  +getVictimByID(victimID : int) : DisasterVictim
+  +addVictim(victim : DisasterVictim) : void
+  +updateVictim(victim : DisasterVictim) : void
+  +softDeleteVictim(victimID : int) : void
+  +hardDeleteVictim(victimID : int) : void
+  +addMedicalRecord(victimID : int, record : MedicalRecord) : void
+  +addFamilyConnection(victimID : int, relation : FamilyRelation) : void
+  +getLocations() : ArrayList<Location>
+  +getAvailableRequirementTypes() : Set<String>
+  +getOptionsForRequirementType(requirementType : String) : Set<String>
+  +addRequirement(victimID : int, requirement : VictimRequirement) : void
+  +removeRequirement(victimID : int, requirementType : String) : void
+  +getAvailableSupplies() : ArrayList<Supply>
+  +getAllSupplies() : ArrayList<Supply>
+  +addSupply(supply : Supply) : void
+  +updateSupply(supply : Supply) : void
+  +allocateSupply(supplyID : int, victimID : int) : void
+  +warnExpiredSupplies() : String
+  +getNextSupplyID() : int
+  +getInquiries() : ArrayList<ReliefService>
+  +addInquiry(inquiry : ReliefService) : void
+  +updateInquiry(inquiry : ReliefService) : void
+  +saveInquirer(inquirer : Inquirer) : int
+  +getNextInquiryID() : int
+  +addSkill(victimID : int, skill : Skill) : void
+  +removeSkill(victimID : int, skillID : int) : void
+  +searchBySkillCategory(category : String) : ArrayList<Skill>
+  +getNextSkillID() : int
 }
 
 ' ─────────────────────────────────────────────
-'  ROW 2: Infrastructure
+'  ROW 2 — UI Helpers
+' ─────────────────────────────────────────────
+
+class VictimManagementUI {
+  -controller : ReliefController
+  -victimUI : VictimUI
+  --
+  +VictimManagementUI(controller : ReliefController, victimUI : VictimUI)
+  +show(contentPanel : JPanel) : void
+}
+
+class VictimUI {
+  -controller : ReliefController
+  --
+  +VictimUI(controller : ReliefController)
+  +buildInfoPanel(victim : DisasterVictim) : JPanel
+  +buildMedicalPanel(victim : DisasterVictim, tabs : JTabbedPane, tabIndex : int) : JPanel
+  +buildFamilyPanel(victim : DisasterVictim, tabs : JTabbedPane, tabIndex : int) : JPanel
+  +buildSkillsPanel(victim : DisasterVictim, tabs : JTabbedPane, tabIndex : int) : JPanel
+  +buildRequirementsPanel(victim : DisasterVictim, tabs : JTabbedPane, tabIndex : int) : JPanel
+}
+
+class SupplyUI {
+  -controller : ReliefController
+  --
+  +SupplyUI(controller : ReliefController)
+  +show(contentPanel : JPanel) : void
+}
+
+class InquiryUI {
+  -controller : ReliefController
+  --
+  +InquiryUI(controller : ReliefController)
+  +show(contentPanel : JPanel) : void
+}
+
+class SkillUI {
+  -controller : ReliefController
+  --
+  +SkillUI(controller : ReliefController)
+  +show(contentPanel : JPanel) : void
+}
+
+' ─────────────────────────────────────────────
+'  ROW 3 — Infrastructure
 ' ─────────────────────────────────────────────
 
 class ActionLogger {
@@ -64,21 +138,24 @@ class ActionLogger {
   +logUpdated(entityType : String, description : String) : void
   +logDeleted(entityType : String, description : String) : void
   +logSoftDeleted(entityType : String, description : String) : void
+  -validateArgs(entityType : String, description : String) : void
   -writeEntry(entry : String) : void
 }
 
 class DatabaseManager {
   -{static} instance : DatabaseManager
-  -connection : Connection
   -url : String
   -username : String
   -password : String
+  -connection : Connection
+  -{static} CONFIG_FILE : String = "src/main/resources/db.config"
   --
   -DatabaseManager()
   +{static} getInstance() : DatabaseManager
   +connect() : Connection
   +disconnect() : void
   +getConnection() : Connection
+  -readConfig() : String[]
 }
 
 interface DataRepository {
@@ -90,14 +167,22 @@ interface DataRepository {
   +updateVictim(victim : DisasterVictim) : void
   +softDeleteVictim(victimID : int) : void
   +hardDeleteVictim(victimID : int) : void
+  -execute(conn : Connection, sql : String, param : int) : void
+  +getNextVictimID() : int
   +saveSupply(supply : Supply) : void
   +updateSupply(supply : Supply) : void
+  +getNextSupplyID() : int
   +saveInquiry(inquiry : ReliefService) : void
   +updateInquiry(inquiry : ReliefService) : void
+  +saveInquirer(inquirer : Inquirer) : int
+  +getNextInquiryID() : int
   +saveRequirement(requirement : VictimRequirement) : void
   +deleteRequirement(victimID : int, requirementType : String) : void
   +saveSkill(skill : Skill) : void
   +deleteSkill(skillID : int) : void
+  +getNextSkillID() : int
+  +saveMedicalRecord(record : MedicalRecord, victimID : int) : void
+  +saveFamilyConnection(relation : FamilyRelation) : void
 }
 
 class PostgreSQLDataRepository {
@@ -112,18 +197,30 @@ class PostgreSQLDataRepository {
   +updateVictim(victim : DisasterVictim) : void
   +softDeleteVictim(victimID : int) : void
   +hardDeleteVictim(victimID : int) : void
+  -execute(conn : Connection, sql : String, param : int) : void
+  +getNextVictimID() : int
   +saveSupply(supply : Supply) : void
   +updateSupply(supply : Supply) : void
+  +getNextSupplyID() : int
   +saveInquiry(inquiry : ReliefService) : void
   +updateInquiry(inquiry : ReliefService) : void
+  +saveInquirer(inquirer : Inquirer) : int
+  +getNextInquiryID() : int
   +saveRequirement(requirement : VictimRequirement) : void
   +deleteRequirement(victimID : int, requirementType : String) : void
   +saveSkill(skill : Skill) : void
   +deleteSkill(skillID : int) : void
+  +getNextSkillID() : int
+  +saveMedicalRecord(record : MedicalRecord, victimID : int) : void
+  +saveFamilyConnection(relation : FamilyRelation) : void
+  -loadMedicalRecords(victim : DisasterVictim, conn : Connection) : void
+  -loadRequirements(victim : DisasterVictim, conn : Connection) : void
+  -loadFamilyConnections(victim : DisasterVictim, conn : Connection) : void
+  -loadSkills(victim : DisasterVictim, conn : Connection) : void
 }
 
 ' ─────────────────────────────────────────────
-'  ROW 3: Services
+'  ROW 4 — Services
 ' ─────────────────────────────────────────────
 
 class DisasterVictimService {
@@ -133,6 +230,7 @@ class DisasterVictimService {
   --
   +DisasterVictimService(repository : DataRepository, logger : ActionLogger)
   +loadVictims() : ArrayList<DisasterVictim>
+  +getAllVictims() : ArrayList<DisasterVictim>
   +addVictim(victim : DisasterVictim) : void
   +updateVictim(victim : DisasterVictim) : void
   +getVictimByID(victimID : int) : DisasterVictim
@@ -141,6 +239,7 @@ class DisasterVictimService {
   +hardDeleteVictim(victimID : int) : void
   +addMedicalRecord(victimID : int, record : MedicalRecord) : void
   +addFamilyConnection(victimID : int, relation : FamilyRelation) : void
+  +getLocations() : ArrayList<Location>
   +addRequirement(victimID : int, requirement : VictimRequirement) : void
   +removeRequirement(victimID : int, requirementType : String) : void
   +addSkill(victimID : int, skill : Skill) : void
@@ -158,8 +257,10 @@ class SupplyService {
   +updateSupply(supply : Supply) : void
   +allocateSupply(supplyID : int, victimID : int) : void
   +getAvailableSupplies() : ArrayList<Supply>
+  +getAllSupplies() : ArrayList<Supply>
   +getExpiredSupplies() : ArrayList<Supply>
   +warnExpiredSupplies() : String
+  +getNextSupplyID() : int
 }
 
 class InquiryService {
@@ -171,6 +272,8 @@ class InquiryService {
   +loadInquiries() : ArrayList<ReliefService>
   +addInquiry(inquiry : ReliefService) : void
   +updateInquiry(inquiry : ReliefService) : void
+  +saveInquirer(inquirer : Inquirer) : int
+  +getNextInquiryID() : int
 }
 
 class RequirementService {
@@ -193,10 +296,11 @@ class SkillService {
   +removeSkill(victimID : int, skillID : int) : void
   +searchByCategory(category : String) : ArrayList<Skill>
   +getVictimSkills(victimID : int) : ArrayList<Skill>
+  +getNextSkillID() : int
 }
 
 ' ─────────────────────────────────────────────
-'  ROW 4: Domain Classes
+'  ROW 5 — Domain Classes
 ' ─────────────────────────────────────────────
 
 class DisasterVictim {
@@ -208,7 +312,7 @@ class DisasterVictim {
   -gender : String
   -comments : String
   -softDeleted : boolean = false
-  -ENTRY_DATE : LocalDate
+  -{final} ENTRY_DATE : LocalDate
   -familyConnections : ArrayList<FamilyRelation>
   -medicalRecords : ArrayList<MedicalRecord>
   -personalBelongings : ArrayList<Supply>
@@ -216,8 +320,8 @@ class DisasterVictim {
   -skills : ArrayList<Skill>
   --
   +DisasterVictim(victimID : int, firstName : String, entryDate : LocalDate)
-  +DisasterVictim(victimID : int, firstName : String, entryDate : LocalDate, dateOfBirth : LocalDate)
-  +DisasterVictim(victimID : int, firstName : String, entryDate : LocalDate, approximateAge : int)
+  +DisasterVictim(victimID : int, firstName : String, entryDate : LocalDate,\n  dateOfBirth : LocalDate)
+  +DisasterVictim(victimID : int, firstName : String, entryDate : LocalDate,\n  approximateAge : int)
   +getVictimID() : int
   +getFirstName() : String
   +setFirstName(firstName : String) : void
@@ -279,26 +383,26 @@ class MedicalRecord {
 }
 
 class Location {
-  -locationID : int
+  -{final} locationID : int
   -name : String
   -address : String
   -occupants : ArrayList<DisasterVictim>
   -supplies : ArrayList<Supply>
   --
-  +Location(locationID : int, locationName : String, address : String)
+  +Location(locationID : int, name : String, address : String)
   +getLocationID() : int
   +getName() : String
-  +setName(locationName : String) : void
+  +setName(name : String) : void
   +getAddress() : String
   +setAddress(address : String) : void
   +getOccupants() : ArrayList<DisasterVictim>
   +setOccupants(occupants : ArrayList<DisasterVictim>) : void
   +getSupplies() : ArrayList<Supply>
-  +setSupplies(inventory : ArrayList<Supply>) : void
+  +setSupplies(supplies : ArrayList<Supply>) : void
   +addOccupant(occupant : DisasterVictim) : void
   +removeOccupant(occupant : DisasterVictim) : void
-  +addSupply(inventory : Supply) : void
-  +removeSupply(inventory : Supply) : void
+  +addSupply(supply : Supply) : void
+  +removeSupply(supply : Supply) : void
 }
 
 class Supply {
@@ -326,11 +430,11 @@ class Supply {
 }
 
 class Inquirer {
-  -inquirerID : int
-  -FIRST_NAME : String
-  -LAST_NAME : String
-  -INFO : String
-  -SERVICES_PHONE : String
+  -{final} inquirerID : int
+  -{final} FIRST_NAME : String
+  -{final} LAST_NAME : String
+  -{final} INFO : String
+  -{final} SERVICES_PHONE : String
   --
   +Inquirer(inquirerID : int, firstName : String,\n  lastName : String, phone : String, info : String)
   +getInquirerID() : int
@@ -341,14 +445,14 @@ class Inquirer {
 }
 
 class ReliefService {
-  -inquiryID : int
+  -{final} inquiryID : int
   -inquirer : Inquirer
   -missingPerson : DisasterVictim
   -dateOfInquiry : LocalDate
   -infoProvided : String
   -lastKnownLocation : Location
   --
-  +ReliefService(inquiryID : int, inquirer : Inquirer,\n  missingPerson : DisasterVictim, inquiryDate : LocalDate,\n  infoProvided : String, lastLocation : Location)
+  +ReliefService(inquiryID : int, inquirer : Inquirer,\n  missingPerson : DisasterVictim, inquiryDate : LocalDate,\n  infoProvided : String, lastKnownLocation : Location)
   +getInquiryID() : int
   +getInquirer() : Inquirer
   +setInquirer(inquirer : Inquirer) : void
@@ -357,15 +461,15 @@ class ReliefService {
   +getDateOfInquiry() : LocalDate
   +setDateOfInquiry(inquiryDate : LocalDate) : void
   +getInfoProvided() : String
-  +setInfoProvided(info : String) : void
+  +setInfoProvided(infoProvided : String) : void
   +getLastKnownLocation() : Location
-  +setLastKnownLocation(lastLocation : Location) : void
+  +setLastKnownLocation(lastKnownLocation : Location) : void
   +getLogDetails() : String
 }
 
 class VictimRequirement {
-  -victimID : int
-  -requirementType : String
+  -{final} victimID : int
+  -{final} requirementType : String
   -selectedOption : String
   --
   +VictimRequirement(victimID : int,\n  requirementType : String, selectedOption : String)
@@ -375,14 +479,21 @@ class VictimRequirement {
   +setSelectedOption(selectedOption : String) : void
 }
 
+class CulturalOptions <<Serializable>> {
+  -{static} {final} serialVersionUID : long = 1L
+  -accommodations : HashMap<String, Set<String>>
+  --
+  +getAccommodations() : HashMap<String, Set<String>>
+}
+
 ' ─────────────────────────────────────────────
-'  Skills Hierarchy
+'  Skill Hierarchy
 ' ─────────────────────────────────────────────
 
 abstract class Skill {
-  -skillID : int
-  -victimID : int
-  -category : String
+  -{final} skillID : int
+  -{final} victimID : int
+  -{final} category : String
   -proficiencyLevel : String
   --
   +Skill(skillID : int, victimID : int,\n  category : String, proficiencyLevel : String)
@@ -394,6 +505,7 @@ abstract class Skill {
 }
 
 class MedicalSkill {
+  +{static} {final} VALID_CERTIFICATION_TYPES : String[] = {"first-aid","counseling","nursing","doctor"}
   -certificationType : String
   -certificationExpiryDate : LocalDate
   --
@@ -402,9 +514,11 @@ class MedicalSkill {
   +setCertificationType(certificationType : String) : void
   +getCertificationExpiryDate() : LocalDate
   +setCertificationExpiryDate(certificationExpiryDate : LocalDate) : void
+  -{static} isValidCertificationType(type : String) : boolean
 }
 
 class LanguageSkill {
+  +{static} {final} VALID_PROFICIENCY_LEVELS : String[] = {"beginner","intermediate","advanced"}
   -languageName : String
   -readWrite : boolean
   -speakListen : boolean
@@ -413,15 +527,19 @@ class LanguageSkill {
   +getLanguageName() : String
   +setLanguageName(languageName : String) : void
   +hasReadWrite() : boolean
+  +setReadWrite(readWrite : boolean) : void
   +hasSpeakListen() : boolean
+  +setSpeakListen(speakListen : boolean) : void
 }
 
 class TradeSkill {
+  +{static} {final} VALID_TRADE_TYPES : String[] = {"carpentry","plumbing","electricity"}
   -tradeType : String
   --
   +TradeSkill(skillID : int, victimID : int,\n  proficiencyLevel : String, tradeType : String)
   +getTradeType() : String
   +setTradeType(tradeType : String) : void
+  -{static} isValidTradeType(type : String) : boolean
 }
 
 ' ─────────────────────────────────────────────
@@ -434,25 +552,26 @@ class ClassNotFoundException <<Exception>>
 class SQLException <<Exception>>
 
 ' ─────────────────────────────────────────────
-'  Layout hints
+'  Layout Hints
 ' ─────────────────────────────────────────────
 
 Main -[hidden]right-> MainFrame
 MainFrame -[hidden]right-> ReliefController
 
-ReliefController -[hidden]down-> DisasterVictimService
-DisasterVictimService -[hidden]right-> SupplyService
-SupplyService -[hidden]right-> InquiryService
-InquiryService -[hidden]right-> RequirementService
-RequirementService -[hidden]right-> SkillService
+ReliefController -[hidden]down-> VictimManagementUI
+VictimManagementUI -[hidden]right-> VictimUI
+VictimUI -[hidden]right-> SupplyUI
+SupplyUI -[hidden]right-> InquiryUI
+InquiryUI -[hidden]right-> SkillUI
 
 ActionLogger -[hidden]right-> DatabaseManager
 DatabaseManager -[hidden]right-> DataRepository
 DataRepository -[hidden]right-> PostgreSQLDataRepository
 
-DisasterVictimService -[hidden]down-> DisasterVictim
-InquiryService -[hidden]down-> ReliefService
-SkillService -[hidden]down-> Skill
+DisasterVictimService -[hidden]right-> SupplyService
+SupplyService -[hidden]right-> InquiryService
+InquiryService -[hidden]right-> RequirementService
+RequirementService -[hidden]right-> SkillService
 
 DisasterVictim -[hidden]right-> FamilyRelation
 FamilyRelation -[hidden]right-> MedicalRecord
@@ -470,15 +589,35 @@ LanguageSkill -[hidden]right-> TradeSkill
 '  Relationships
 ' ─────────────────────────────────────────────
 
+' Entry Point
 Main --> MainFrame
 MainFrame --> ReliefController
 
+' MainFrame owns all UI helpers (composition)
+MainFrame *-- VictimManagementUI
+MainFrame *-- VictimUI
+MainFrame *-- SupplyUI
+MainFrame *-- InquiryUI
+MainFrame *-- SkillUI
+
+' VictimManagementUI uses VictimUI
+VictimManagementUI --> VictimUI
+
+' Controller -> Services (association)
 ReliefController --> DisasterVictimService
 ReliefController --> SupplyService
 ReliefController --> InquiryService
 ReliefController --> RequirementService
 ReliefController --> SkillService
 
+' UI helpers -> Controller (association)
+VictimManagementUI --> ReliefController
+VictimUI --> ReliefController
+SupplyUI --> ReliefController
+InquiryUI --> ReliefController
+SkillUI --> ReliefController
+
+' Services -> Repository (association)
 DisasterVictimService --> DataRepository
 DisasterVictimService --> ActionLogger
 SupplyService --> DataRepository
@@ -489,31 +628,48 @@ RequirementService --> DataRepository
 SkillService --> DataRepository
 SkillService --> ActionLogger
 
+' Infrastructure
 PostgreSQLDataRepository ..|> DataRepository
 PostgreSQLDataRepository --> DatabaseManager
 
+' RequirementService uses CulturalOptions (dependency — loaded temporarily)
+RequirementService ..> CulturalOptions : <<use>>
+
+' Skill inheritance
 Skill <|-- MedicalSkill
 Skill <|-- LanguageSkill
 Skill <|-- TradeSkill
 
+' DisasterVictim aggregations (victim owns these lists; parts can exist independently in DB)
 DisasterVictim "1" o-- "0..*" FamilyRelation
 DisasterVictim "1" o-- "0..*" MedicalRecord
-DisasterVictim "1" o-- "0..*" Supply
+DisasterVictim "1" o-- "0..*" Supply : personalBelongings
 DisasterVictim "1" o-- "0..*" VictimRequirement
 DisasterVictim "1" o-- "0..*" Skill
 
+' Location aggregations
 Location "1" o-- "0..*" DisasterVictim
 Location "1" o-- "0..*" Supply
 
+' Associations
 MedicalRecord "0..*" --> "1" Location
 FamilyRelation "0..*" --> "2" DisasterVictim
 ReliefService "1" --> "1" Inquirer
-ReliefService "1" --> "1" DisasterVictim
-ReliefService "1" --> "0..1" Location
-Supply "0..1" --> "0..1" DisasterVictim : allocated to
+ReliefService "1" --> "1" DisasterVictim : missingPerson
+ReliefService "1" --> "0..1" Location : lastKnownLocation
+Supply "0..1" --> "0..1" DisasterVictim : allocatedTo
 
+' Throws
 DisasterVictim ..> IllegalArgumentException : <<throws>>
 Supply ..> IllegalArgumentException : <<throws>>
+Location ..> IllegalArgumentException : <<throws>>
+Skill ..> IllegalArgumentException : <<throws>>
+MedicalSkill ..> IllegalArgumentException : <<throws>>
+LanguageSkill ..> IllegalArgumentException : <<throws>>
+TradeSkill ..> IllegalArgumentException : <<throws>>
+ReliefService ..> IllegalArgumentException : <<throws>>
+VictimRequirement ..> IllegalArgumentException : <<throws>>
+Inquirer ..> IllegalArgumentException : <<throws>>
 RequirementService ..> IOException : <<throws>>
 RequirementService ..> ClassNotFoundException : <<throws>>
 DatabaseManager ..> SQLException : <<throws>>

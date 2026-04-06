@@ -5,7 +5,7 @@ package edu.ucalgary.oop;
  *
  * Represents a single cultural or religious requirement registered for a
  * disaster victim (Feature 7).  Requirements are loaded from the serialized
- * available_requirements.ser file at startup; only types and options listed
+ * available_requirements1.ser file at startup; only types and options listed
  * in that file are valid.
  *
  * Each victim may hold at most one option per requirement type — for example,
@@ -75,7 +75,7 @@ public class VictimRequirement {
     /**
      * Updates the selected option for this requirement.
      * The new option should be validated against the available options loaded from
-     * available_requirements.ser before calling this method.
+     * available_requirements1.ser before calling this method.
      *
      * @param selectedOption non-null, non-empty option value
      * @throws IllegalArgumentException if value is null or blank

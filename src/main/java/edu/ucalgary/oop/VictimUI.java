@@ -480,7 +480,7 @@ public class VictimUI  {
      * Displays a table of all cultural and religious requirements for the
      * given victim and provides buttons to add or remove requirements.
      * Available requirement types and options are loaded from the
-     * available_requirements.ser file via the controller.
+     * available_requirements1.ser file via the controller.
      *
      * @param victim   the DisasterVictim whose requirements to display
      * @param tabs     the parent JTabbedPane used to refresh this tab on update
