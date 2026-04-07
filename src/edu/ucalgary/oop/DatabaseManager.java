@@ -29,7 +29,7 @@ public class DatabaseManager {
     private Connection connection;
 
     /** Path to the external database credentials config file. */
-    private static final String CONFIG_FILE = "src/main/resources/db.config";
+    private static final String CONFIG_FILE = "data/db.config";
 
     /**
      * Private constructor — reads database credentials from the config file.
