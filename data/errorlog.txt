@@ -1,0 +1,2 @@
+[2026-04-09] FATAL ERROR: Could not connect to database: Connection to localhost:5432 refused. Check that the hostname and port are correct and that the postmaster is accepting TCP/IP connections.
+    at edu.ucalgary.oop.DatabaseManager.connect(DatabaseManager.java:73)%n    at edu.ucalgary.oop.Main.main(Main.java:32)%n

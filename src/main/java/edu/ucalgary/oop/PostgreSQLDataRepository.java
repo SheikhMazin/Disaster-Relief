@@ -84,7 +84,7 @@ public class PostgreSQLDataRepository implements DataRepository {
         String sql =
                 "SELECT p.id, p.first_name, p.last_name, p.comments, " +
                         "dv.date_of_birth, dv.approximate_age, dv.gender, " +
-                        "dv.entry_date, dv.is_soft_deleted " +
+                        "dv.entry_date, dv.is_soft_deleted, dv.location_id " +
                         "FROM Person p " +
                         "JOIN DisasterVictim dv ON p.id = dv.person_id";
 
@@ -131,6 +131,11 @@ public class PostgreSQLDataRepository implements DataRepository {
                 if (comments != null) victim.setComments(comments);
 
                 if (rs.getBoolean("is_soft_deleted")) victim.softDelete();
+
+                int locationID = rs.getInt("location_id");
+                if (!rs.wasNull() && locationID > 0) {
+                    victim.setLocationID(locationID);
+                }
 
                 victims.add(victim);
 

@@ -139,3 +139,109 @@
 [2026-04-07] DELETED skill | Victim 1 (Alice) — skill ID 1 removed
 [2026-04-07] ADDED skill | Victim 1 (Alice) — Language skill added (ID: 1)
 [2026-04-07] ADDED skill | Victim 1 (Alice) — Language skill added (ID: 1)
+[2026-04-09] ADDED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] ADDED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] ADDED skill | Victim ID: 1 | Category: Language | Skill ID: 5
+[2026-04-09] DELETED skill | Victim ID: 1 | Skill ID: 5
+[2026-04-09] ADDED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] ADDED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] ADDED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] ADDED skill | Victim ID: 1 | Category: Language | Skill ID: 1
+[2026-04-09] ADDED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] ADDED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] SOFT DELETED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] ADDED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] ADDED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] ADDED medical record | Victim ID: 1 | Treatment: Treatment | Date: 2026-04-08
+[2026-04-09] ADDED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] ADDED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] ADDED family connection | Victim ID: 1 | Relationship: sibling | Related to victim ID: 2
+[2026-04-09] ADDED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] ADDED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] ADDED requirement | Victim ID: 1 | Type: dietary restrictions | Option: halal
+[2026-04-09] DELETED requirement | Victim ID: 1 | Type: dietary restrictions
+[2026-04-09] ADDED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] SOFT DELETED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] ADDED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] DELETED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] ADDED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] SOFT DELETED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] ADDED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] ADDED requirement | Victim ID: 1 | Type: dietary restrictions | Option: halal
+[2026-04-09] ADDED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] ADDED supply | ID: 3 | Type: Old food | Quantity: 2
+[2026-04-09] ADDED supply | ID: 3 | Type: Old food | Quantity: 2
+[2026-04-09] ADDED supply | ID: 3 | Type: Old food | Quantity: 2
+[2026-04-09] ADDED supply | ID: 3 | Type: Old food | Quantity: 2
+[2026-04-09] ADDED supply | ID: 1 | Type: Blanket | Quantity: 5
+[2026-04-09] ADDED supply | ID: 2 | Type: Water | Quantity: 10
+[2026-04-09] ADDED supply | ID: 1 | Type: Blanket | Quantity: 5
+[2026-04-09] ADDED supply | ID: 1 | Type: Blanket | Quantity: 5
+[2026-04-09] UPDATED supply | ID: 1 | Type: Blanket -> allocated to victim 1 (Alice)
+[2026-04-09] ADDED supply | ID: 3 | Type: Old food | Quantity: 2
+[2026-04-09] ADDED supply | ID: 1 | Type: Blanket | Quantity: 5
+[2026-04-09] ADDED supply | ID: 1 | Type: Blanket | Quantity: 5
+[2026-04-09] ADDED supply | ID: 1 | Type: Blanket | Quantity: 5
+[2026-04-09] UPDATED supply | ID: 1 | Type: Blanket -> allocated to victim 1 (Alice)
+[2026-04-09] ADDED inquiry | ID: 1 | Inquirer: Jane Doe | Missing person: Alice 
+[2026-04-09] ADDED inquiry | ID: 1 | Inquirer: Jane Doe | Missing person: Alice 
+[2026-04-09] ADDED inquiry | ID: 1 | Inquirer: Jane Doe | Missing person: Alice 
+[2026-04-09] ADDED inquiry | ID: 1 | Inquirer: Jane Doe | Missing person: Alice 
+[2026-04-09] ADDED skill | Victim 1 (Alice) — Language skill added (ID: 1)
+[2026-04-09] ADDED skill | Victim 1 (Alice) — Language skill added (ID: 1)
+[2026-04-09] DELETED skill | Victim 1 (Alice) — skill ID 1 removed
+[2026-04-09] ADDED skill | Victim 1 (Alice) — Language skill added (ID: 1)
+[2026-04-09] ADDED skill | Victim 1 (Alice) — Language skill added (ID: 1)
+[2026-04-09] ADDED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] ADDED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] ADDED skill | Victim ID: 1 | Category: Language | Skill ID: 5
+[2026-04-09] DELETED skill | Victim ID: 1 | Skill ID: 5
+[2026-04-09] ADDED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] ADDED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] ADDED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] ADDED skill | Victim ID: 1 | Category: Language | Skill ID: 1
+[2026-04-09] ADDED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] ADDED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] SOFT DELETED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] ADDED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] ADDED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] ADDED medical record | Victim ID: 1 | Treatment: Treatment | Date: 2026-04-08
+[2026-04-09] ADDED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] ADDED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] ADDED family connection | Victim ID: 1 | Relationship: sibling | Related to victim ID: 2
+[2026-04-09] ADDED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] ADDED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] ADDED requirement | Victim ID: 1 | Type: dietary restrictions | Option: halal
+[2026-04-09] DELETED requirement | Victim ID: 1 | Type: dietary restrictions
+[2026-04-09] ADDED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] SOFT DELETED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] ADDED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] DELETED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] ADDED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] SOFT DELETED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] ADDED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] ADDED requirement | Victim ID: 1 | Type: dietary restrictions | Option: halal
+[2026-04-09] ADDED disaster victim | ID: 1 | Name: Alice 
+[2026-04-09] ADDED supply | ID: 3 | Type: Old food | Quantity: 2
+[2026-04-09] ADDED supply | ID: 3 | Type: Old food | Quantity: 2
+[2026-04-09] ADDED supply | ID: 3 | Type: Old food | Quantity: 2
+[2026-04-09] ADDED supply | ID: 3 | Type: Old food | Quantity: 2
+[2026-04-09] ADDED supply | ID: 1 | Type: Blanket | Quantity: 5
+[2026-04-09] ADDED supply | ID: 2 | Type: Water | Quantity: 10
+[2026-04-09] ADDED supply | ID: 1 | Type: Blanket | Quantity: 5
+[2026-04-09] ADDED supply | ID: 1 | Type: Blanket | Quantity: 5
+[2026-04-09] UPDATED supply | ID: 1 | Type: Blanket -> allocated to victim 1 (Alice)
+[2026-04-09] ADDED supply | ID: 3 | Type: Old food | Quantity: 2
+[2026-04-09] ADDED supply | ID: 1 | Type: Blanket | Quantity: 5
+[2026-04-09] ADDED supply | ID: 1 | Type: Blanket | Quantity: 5
+[2026-04-09] ADDED supply | ID: 1 | Type: Blanket | Quantity: 5
+[2026-04-09] UPDATED supply | ID: 1 | Type: Blanket -> allocated to victim 1 (Alice)
+[2026-04-09] ADDED inquiry | ID: 1 | Inquirer: Jane Doe | Missing person: Alice 
+[2026-04-09] ADDED inquiry | ID: 1 | Inquirer: Jane Doe | Missing person: Alice 
+[2026-04-09] ADDED inquiry | ID: 1 | Inquirer: Jane Doe | Missing person: Alice 
+[2026-04-09] ADDED inquiry | ID: 1 | Inquirer: Jane Doe | Missing person: Alice 
+[2026-04-09] ADDED skill | Victim 1 (Alice) — Language skill added (ID: 1)
+[2026-04-09] ADDED skill | Victim 1 (Alice) — Language skill added (ID: 1)
+[2026-04-09] DELETED skill | Victim 1 (Alice) — skill ID 1 removed
+[2026-04-09] ADDED skill | Victim 1 (Alice) — Language skill added (ID: 1)
+[2026-04-09] ADDED skill | Victim 1 (Alice) — Language skill added (ID: 1)

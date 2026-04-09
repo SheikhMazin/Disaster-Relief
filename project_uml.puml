@@ -23,6 +23,7 @@ skinparam class {
 
 class Main {
   +{static} main(args : String[]) : void
+  -{static} logError(e : Exception) : void
 }
 
 class MainFrame {
@@ -34,9 +35,15 @@ class MainFrame {
   -supplyUI : SupplyUI
   -inquiryUI : InquiryUI
   -skillUI : SkillUI
+  -locationUI : LocationUI
   --
   +MainFrame(controller : ReliefController)
   -initComponents() : void
+  +showVictimManagement() : void
+  +showSupplyManagement() : void
+  +showInquiryManagement() : void
+  +showSkillManagement() : void
+  +showLocationManagement() : void
 }
 
 class ReliefController {
@@ -121,6 +128,13 @@ class SkillUI {
   -controller : ReliefController
   --
   +SkillUI(controller : ReliefController)
+  +show(contentPanel : JPanel) : void
+}
+
+class LocationUI {
+  -controller : ReliefController
+  --
+  +LocationUI(controller : ReliefController)
   +show(contentPanel : JPanel) : void
 }
 
@@ -255,7 +269,7 @@ class SupplyService {
   +loadSupplies() : ArrayList<Supply>
   +addSupply(supply : Supply) : void
   +updateSupply(supply : Supply) : void
-  +allocateSupply(supplyID : int, victimID : int) : void
+  +allocateSupply(supply : Supply, victim : DisasterVictim) : void
   +getAvailableSupplies() : ArrayList<Supply>
   +getAllSupplies() : ArrayList<Supply>
   +getExpiredSupplies() : ArrayList<Supply>
@@ -272,6 +286,8 @@ class InquiryService {
   +loadInquiries() : ArrayList<ReliefService>
   +addInquiry(inquiry : ReliefService) : void
   +updateInquiry(inquiry : ReliefService) : void
+  +getInquiries() : ArrayList<ReliefService>
+  +getInquiriesForVictim(victimID : int) : ArrayList<ReliefService>
   +saveInquirer(inquirer : Inquirer) : int
   +getNextInquiryID() : int
 }
@@ -292,10 +308,10 @@ class SkillService {
   -logger : ActionLogger
   --
   +SkillService(repository : DataRepository, logger : ActionLogger)
-  +addSkill(victimID : int, skill : Skill) : void
-  +removeSkill(victimID : int, skillID : int) : void
-  +searchByCategory(category : String) : ArrayList<Skill>
-  +getVictimSkills(victimID : int) : ArrayList<Skill>
+  +addSkill(victim : DisasterVictim, skill : Skill) : void
+  +removeSkill(victim : DisasterVictim, skillID : int) : void
+  +searchByCategory(victims : ArrayList<DisasterVictim>, category : String) : ArrayList<Skill>
+  +getVictimSkills(victim : DisasterVictim) : ArrayList<Skill>
   +getNextSkillID() : int
 }
 
@@ -307,6 +323,7 @@ class DisasterVictim {
   -victimID : int
   -firstName : String
   -lastName : String
+  -locationID : int
   -dateOfBirth : LocalDate
   -approximateAge : Integer
   -gender : String
@@ -338,6 +355,8 @@ class DisasterVictim {
   +getEntryDate() : LocalDate
   +isSoftDeleted() : boolean
   +softDelete() : void
+  +getLocationID() : int
+  +setLocationID(locationID : int) : void
   +getFamilyConnections() : ArrayList<FamilyRelation>
   +getMedicalRecords() : ArrayList<MedicalRecord>
   +getPersonalBelongings() : ArrayList<Supply>
@@ -550,6 +569,7 @@ class IllegalArgumentException <<Exception>>
 class IOException <<Exception>>
 class ClassNotFoundException <<Exception>>
 class SQLException <<Exception>>
+class RuntimeException <<Exception>>
 
 ' ─────────────────────────────────────────────
 '  Layout Hints
@@ -563,6 +583,7 @@ VictimManagementUI -[hidden]right-> VictimUI
 VictimUI -[hidden]right-> SupplyUI
 SupplyUI -[hidden]right-> InquiryUI
 InquiryUI -[hidden]right-> SkillUI
+SkillUI -[hidden]right-> LocationUI
 
 ActionLogger -[hidden]right-> DatabaseManager
 DatabaseManager -[hidden]right-> DataRepository
@@ -599,6 +620,7 @@ MainFrame *-- VictimUI
 MainFrame *-- SupplyUI
 MainFrame *-- InquiryUI
 MainFrame *-- SkillUI
+MainFrame *-- LocationUI
 
 ' VictimManagementUI uses VictimUI
 VictimManagementUI --> VictimUI
@@ -616,6 +638,7 @@ VictimUI --> ReliefController
 SupplyUI --> ReliefController
 InquiryUI --> ReliefController
 SkillUI --> ReliefController
+LocationUI --> ReliefController
 
 ' Services -> Repository (association)
 DisasterVictimService --> DataRepository
@@ -640,7 +663,7 @@ Skill <|-- MedicalSkill
 Skill <|-- LanguageSkill
 Skill <|-- TradeSkill
 
-' DisasterVictim aggregations (victim owns these lists; parts can exist independently in DB)
+' DisasterVictim aggregations
 DisasterVictim "1" o-- "0..*" FamilyRelation
 DisasterVictim "1" o-- "0..*" MedicalRecord
 DisasterVictim "1" o-- "0..*" Supply : personalBelongings
@@ -672,7 +695,7 @@ VictimRequirement ..> IllegalArgumentException : <<throws>>
 Inquirer ..> IllegalArgumentException : <<throws>>
 RequirementService ..> IOException : <<throws>>
 RequirementService ..> ClassNotFoundException : <<throws>>
-DatabaseManager ..> SQLException : <<throws>>
+DatabaseManager ..> RuntimeException : <<throws>>
 PostgreSQLDataRepository ..> SQLException : <<throws>>
 
 @enduml

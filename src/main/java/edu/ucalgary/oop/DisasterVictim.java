@@ -27,6 +27,7 @@ public class DisasterVictim {
     private final int victimID;
     private String firstName;
     private String lastName;
+    private int locationID;
 
     /** Exact date of birth — mutually exclusive with approximateAge. */
     private LocalDate dateOfBirth;
@@ -149,6 +150,14 @@ public class DisasterVictim {
     public String getLastName() { return lastName; }
 
     /**
+     * Returns the ID of the location this victim is currently registered at.
+     * Returns 0 if no location has been assigned.
+     *
+     * @return locationID, or 0 if not set
+     */
+    public int getLocationID() { return locationID; }
+
+    /**
      * Returns the victim's exact date of birth, or null if only an
      * approximate age is recorded.
      * @return dateOfBirth, may be null
@@ -244,6 +253,21 @@ public class DisasterVictim {
             throw new IllegalArgumentException("lastName cannot be null or empty.");
         }
         this.lastName = newLastName;
+    }
+
+
+    /**
+     * Sets the location ID for this victim, indicating which relief location
+     * they are currently registered at.
+     *
+     * @param locationID positive integer ID of the location
+     * @throws IllegalArgumentException if locationID is not positive
+     */
+    public void setLocationID(int locationID) {
+        if (locationID <= 0) {
+            throw new IllegalArgumentException("locationID must be greater than 0.");
+        }
+        this.locationID = locationID;
     }
 
     /**

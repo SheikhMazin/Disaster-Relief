@@ -17,6 +17,7 @@ public class MainFrame extends JFrame{
     private SupplyUI supplyUI;
     private InquiryUI inquiryUI;
     private SkillUI skillUI;
+    private LocationUI locationUI;
 
    public MainFrame(ReliefController controller){
        this.controller = controller;
@@ -25,6 +26,7 @@ public class MainFrame extends JFrame{
        this.inquiryUI = new InquiryUI(controller);
        this.supplyUI = new SupplyUI(controller);
        this.skillUI = new SkillUI(controller);
+       this.locationUI = new LocationUI(controller);
 
        setTitle("Disaster Relief System");
        setSize(1024, 768);
@@ -59,11 +61,12 @@ public class MainFrame extends JFrame{
         JButton inquiriesBtn = new JButton("🔍 Inquiries");
         JButton skillsBtn    = new JButton("⚡ Skills");
         JButton exitBtn      = new JButton("✖ Exit");
+        JButton locationsBtn = new JButton("📍 Locations");
 
         // Style all buttons
         Dimension btnSize = new Dimension(140, 40);
         for (JButton btn : new JButton[]{victimsBtn, suppliesBtn,
-                inquiriesBtn, skillsBtn, exitBtn}) {
+                inquiriesBtn, skillsBtn, locationsBtn, exitBtn}) {
             btn.setPreferredSize(btnSize);
             btn.setFocusPainted(false);
             btn.setBorderPainted(false);
@@ -77,11 +80,12 @@ public class MainFrame extends JFrame{
         suppliesBtn.setBackground(new Color(70, 130, 180));
         inquiriesBtn.setBackground(new Color(70, 130, 180));
         skillsBtn.setBackground(new Color(70, 130, 180));
+        locationsBtn.setBackground(new Color(70, 130, 180));
         exitBtn.setBackground(new Color(180, 60, 60)); // red
 
         // Add hover effect AFTER colors are set
         for (JButton btn : new JButton[]{victimsBtn, suppliesBtn,
-                inquiriesBtn, skillsBtn, exitBtn}) {
+                inquiriesBtn, skillsBtn, locationsBtn, exitBtn}) {
             Color original = btn.getBackground(); // captures each button's own color
             Color hover    = original.brighter();
             btn.addMouseListener(new MouseAdapter() {
@@ -112,6 +116,7 @@ public class MainFrame extends JFrame{
         suppliesBtn.addActionListener(e -> showSupplyManagement());
         inquiriesBtn.addActionListener(e -> showInquiryManagement());
         skillsBtn.addActionListener(e -> showSkillManagement());
+        locationsBtn.addActionListener(e -> showLocationManagement());
         exitBtn.addActionListener(e -> {
             int confirm = JOptionPane.showConfirmDialog(
                     this,
@@ -128,9 +133,7 @@ public class MainFrame extends JFrame{
 
     public void showVictimManagement() { victimManagementUI.show(contentPanel); }
 
-    public void showSupplyManagement() {
-        supplyUI.show(contentPanel);
-    }
+    public void showSupplyManagement() { supplyUI.show(contentPanel); }
 
     public void showInquiryManagement() {
         inquiryUI.show(contentPanel);
@@ -138,6 +141,7 @@ public class MainFrame extends JFrame{
 
     public void showSkillManagement() { skillUI.show(contentPanel); }
 
+    public void showLocationManagement() { locationUI.show(contentPanel); }
 
 
 }

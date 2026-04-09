@@ -70,7 +70,7 @@ public class DatabaseManager {
         try {
             this.connection = DriverManager.getConnection(this.url, this.username, this.password);
         } catch (SQLException e) {
-            System.err.println("Connection failed: " + e.getMessage());
+            throw new RuntimeException("Could not connect to database: " + e.getMessage(), e);
         }
         return this.connection;
     }
