@@ -32,7 +32,8 @@ public class ReliefController {
     private final SkillService skillService;
 
     private static final String REQUIREMENTS_FILE =
-            "data/available_requirements.ser";
+            "src/main/resources/available_requirements.ser";
+
 
     // =========================================================================
     //  Constructor

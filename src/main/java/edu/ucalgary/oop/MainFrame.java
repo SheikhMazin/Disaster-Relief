@@ -126,10 +126,7 @@ public class MainFrame extends JFrame{
     }
 
 
-    public void showVictimManagement() {
-        victimManagementUI.show(contentPanel);
-    }
-
+    public void showVictimManagement() { victimManagementUI.show(contentPanel); }
 
     public void showSupplyManagement() {
         supplyUI.show(contentPanel);

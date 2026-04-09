@@ -32,3 +32,5 @@ bin/
 ### IntelliJ XML ###
 .idea/
 *.iml
+
+/lib
